@@ -6,6 +6,7 @@
 #' @param object Seurat object
 #' @param embedding Name of the embedding (e.g. 'umap')
 #' @param color Gene or metadata to color cells
+#' @param label Type of group labels (text or label)
 #' @param pointsize Point size
 #' @param dict Dictionary for the convert_features function
 #' @param from From argument for convert_features
@@ -15,26 +16,36 @@
 #' @param n.cells Number of cells to plot (randomly sampled)
 #' @param assay Assay with expression data (e.g. RNA)
 #' @param slot Slot of expression data (counts, data, scale.data)
+#' @param alpha Transparency of points (0-1)
+#' @param color.transform Transformation of values used for color. 
+#' Options include log, log2, log1p, log10
+#' @param legend.position Position of the color legend.
 #' @export
 #' @examples 
 #' #Plot CD3D on umap embedding in Seurat object
 #' plot_embedding(object, "CD3D", "umap")
 #' 
 plot_embedding <- function(
-  object    = NULL,
-  color     = "",
-  embedding = tail(names(object@reductions), 1),
-  pointsize = NULL,
-  dim.1     = 1,
-  dim.2     = 2,
-  dict      = object@misc$features,
-  from      = 1,
-  to        = 2,
-  brush     = NULL,
-  cells     = NULL,
-  n.cells   = NULL,
-  assay     = "RNA",
-  slot      = "data"
+  object     = NULL,
+  color      = "",
+  label      = FALSE,
+  label.size = 4,
+  embedding  = tail(names(object@reductions), 1),
+  pointsize  = NULL,
+  dim.1      = 1,
+  dim.2      = 2,
+  dict       = object@misc$features,
+  from       = 1,
+  to         = 2,
+  brush      = NULL,
+  cells      = NULL,
+  n.cells    = NULL,
+  assay      = "RNA",
+  slot       = "data",
+  alpha      = 1,
+  shape      = 20,
+  color.transform = "",
+  legend.position = "right"
 ) {
   
   # Specify conditions that are required for the function to work
@@ -64,7 +75,13 @@ plot_embedding <- function(
   
   # Compute values for input arguments that are NULL
   if (is.null(pointsize)) {
-    pointsize <- 3 / log10( dim(object)[2] - 0.5)
+    pointsize <- dplyr::case_when(
+      dplyr::between(dim(object)[2],     0,    250) ~ 3,
+      dplyr::between(dim(object)[2],   250,   1000) ~ 2,
+      dplyr::between(dim(object)[2],  1000,   5000) ~ 1,
+      dplyr::between(dim(object)[2],  5000,  50000) ~ 0.1,
+      dim(object)[2] > 50000 ~ 0.001
+    ) # write function to smooth that
   }
   # Convert gene names to/from synonyms
   if (!color %in% rownames(object) & color %in% dict[[to]]) {
@@ -88,13 +105,63 @@ plot_embedding <- function(
     warning(paste0("Expression/metadata for '", color, "' not found."))
     df$col <- NaN
   }
+  df$col <- switch (color.transform,
+          "log"   = log(df$col),
+          "log2"  = log2(df$col),
+          "log1p" = log1p(df$col),
+          "log10" = log10(df$col),
+          df$col
+  )
+  
+  # Create color scale & guide elements
+  if (class(df$col) %in% c("numeric", "integer")) {
+    color_guide <- ggplot2::guide_colorbar(
+      barwidth = 1, barheight = 15, ticks = FALSE, frame.colour = "black"
+    )
+    ann_cols <- viridis::scale_color_viridis(option = "B", direction = -1)
+    groups <- FALSE
+  } else {
+    color_guide <- ggplot2::guide_legend(
+      override.aes = list(size = 8), ncol = round(length(unique(df$col))/10)
+    )
+    ann_cols <- NULL
+    groups <- TRUE
+  }
+  
+  # Create group labels
+  if (groups & label %in% c("text", "label")) {
+    ann <- dplyr::summarise(
+      dplyr::group_by(df, col), x = median(x), y = median(y)
+    )
+    legend.position <- ""
+    if (label == "text") {
+      groups <- ggplot2::geom_text(
+        ggplot2::aes(label = col, col = NULL), ann, size = label.size
+        )
+    } else {
+      groups <- ggplot2::geom_label(
+        ggplot2::aes(label = col), ann, size = label.size
+        )
+    }
+  } else {
+    groups <- NULL
+  }
   
   # Order cells by color
   df <- df[order(df$col), ]
   
   ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
-    ggplot2::geom_point(size = pointsize) +
+    ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape) +
+    groups +
     ggplot2::coord_fixed() +
+    ggplot2::labs(col = NULL, title = color) +
+    ggplot2::guides(
+      color = color_guide
+    ) +
+    ann_cols +
     ggplot2::theme_void(20) +
+    ggplot2::theme(
+      legend.position = legend.position
+    ) +
     xlim + ylim
 }
