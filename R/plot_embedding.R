@@ -8,14 +8,14 @@
 #' @param color Gene or metadata to color cells
 #' @param label Type of group labels (text or label)
 #' @param pointsize Point size
-#' @param dict Dictionary for the convert_features function
-#' @param from From argument for convert_features
-#' @param to To argument for convert_features
 #' @param brush Brushed points (xmin, xmax, ymin, ymax)
 #' @param cells Character of cell barcodes to plot
 #' @param n.cells Number of cells to plot (randomly sampled)
 #' @param assay Assay with expression data (e.g. RNA)
 #' @param slot Slot of expression data (counts, data, scale.data)
+#' @param dict Dictionary for the convert_features function
+#' @param from From argument for convert_features
+#' @param to To argument for convert_features
 #' @param alpha Transparency of points (0-1)
 #' @param color.transform Transformation of values used for color. 
 #' Options include log, log2, log1p, log10
@@ -34,14 +34,14 @@ plot_embedding <- function(
   pointsize  = NULL,
   dim.1      = 1,
   dim.2      = 2,
-  dict       = object@misc$features,
-  from       = 1,
-  to         = 2,
   brush      = NULL,
   cells      = NULL,
   n.cells    = NULL,
   assay      = "RNA",
   slot       = "data",
+  dict       = object@misc$features,
+  from       = 1,
+  to         = 2,
   alpha      = 1,
   shape      = 20,
   color.transform = "",
@@ -51,6 +51,7 @@ plot_embedding <- function(
   # Specify conditions that are required for the function to work
   stopifnot(
     class(object) == "Seurat",
+    length(color) == 1,
     embedding %in% names(object@reductions),
     dim.1 %in% 1:dim(object@reductions[[embedding]]@cell.embeddings)[2],
     dim.2 %in% 1:dim(object@reductions[[embedding]]@cell.embeddings)[2]
@@ -58,6 +59,9 @@ plot_embedding <- function(
   if (is.null(embedding)) {
     stop("No low dimensional embeddings are stored in this Seurat object.")
   }
+  
+  # Create annotations based on input (some inputs are changed)
+  title <- color
   
   # Subset data based on cells
   if (!is.null(cells)) {
@@ -105,13 +109,17 @@ plot_embedding <- function(
     warning(paste0("Expression/metadata for '", color, "' not found."))
     df$col <- NaN
   }
-  df$col <- switch (color.transform,
-          "log"   = log(df$col),
-          "log2"  = log2(df$col),
-          "log1p" = log1p(df$col),
-          "log10" = log10(df$col),
-          df$col
-  )
+  
+  # Transform values based on input
+  if (class(df$col) %in% c("numeric", "integer")) {
+    df$col <- switch (color.transform,
+      "log"   = log(df$col),
+      "log2"  = log2(df$col),
+      "log1p" = log1p(df$col),                      
+      "log10" = log10(df$col),
+      df$col
+    )
+  }
   
   # Create color scale & guide elements
   if (class(df$col) %in% c("numeric", "integer")) {
@@ -122,7 +130,7 @@ plot_embedding <- function(
     groups <- FALSE
   } else {
     color_guide <- ggplot2::guide_legend(
-      override.aes = list(size = 8), ncol = round(length(unique(df$col))/10)
+      override.aes = list(size = 8), ncol = ceiling(length(unique(df$col))/10)
     )
     ann_cols <- NULL
     groups <- TRUE
@@ -154,7 +162,7 @@ plot_embedding <- function(
     ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape) +
     groups +
     ggplot2::coord_fixed() +
-    ggplot2::labs(col = NULL, title = color) +
+    ggplot2::labs(col = NULL, title = title) +
     ggplot2::guides(
       color = color_guide
     ) +
