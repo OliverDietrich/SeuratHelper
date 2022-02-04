@@ -7,18 +7,24 @@
 plot_embedding(
   object = NULL,
   color = "",
+  label = FALSE,
+  label.size = 4,
   embedding = tail(names(object@reductions), 1),
   pointsize = NULL,
   dim.1 = 1,
   dim.2 = 2,
-  dict = object@misc$features,
-  from = 1,
-  to = 2,
   brush = NULL,
   cells = NULL,
   n.cells = NULL,
   assay = "RNA",
-  slot = "data"
+  slot = "data",
+  dict = object@misc$features,
+  from = 1,
+  to = 2,
+  alpha = 1,
+  shape = 20,
+  color.transform = "",
+  legend.position = "right"
 )
 }
 \arguments{
@@ -26,15 +32,11 @@ plot_embedding(
 
 \item{color}{Gene or metadata to color cells}
 
+\item{label}{Type of group labels (text or label)}
+
 \item{embedding}{Name of the embedding (e.g. 'umap')}
 
 \item{pointsize}{Point size}
-
-\item{dict}{Dictionary for the convert_features function}
-
-\item{from}{From argument for convert_features}
-
-\item{to}{To argument for convert_features}
 
 \item{brush}{Brushed points (xmin, xmax, ymin, ymax)}
 
@@ -45,6 +47,19 @@ plot_embedding(
 \item{assay}{Assay with expression data (e.g. RNA)}
 
 \item{slot}{Slot of expression data (counts, data, scale.data)}
+
+\item{dict}{Dictionary for the convert_features function}
+
+\item{from}{From argument for convert_features}
+
+\item{to}{To argument for convert_features}
+
+\item{alpha}{Transparency of points (0-1)}
+
+\item{color.transform}{Transformation of values used for color.
+Options include log, log2, log1p, log10}
+
+\item{legend.position}{Position of the color legend.}
 }
 \description{
 This function creates a plot of a cell embedding stored in a Seurat object.
