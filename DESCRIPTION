@@ -1,0 +1,16 @@
+Package: SeuratHelper
+Title: Helper functions to assist scRNA-seq data analysis from a Seurat object
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Oliver",
+           family = "Dietrich",
+           role = c("aut", "cre"),
+           email = "Oliver.Dietrich@helmholtz-hiri.de",
+           comment = c(ORCID = " 0000-0002-4776-8960 "))
+Description: A compendium of functions intended to expand the functionality of the Seurat package. Also includes personalized functions that replace the common Seurat style.
+License: `use_mit_license()`, `use_gpl3_license()` or friends to
+    pick a license
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
