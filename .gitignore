@@ -1,3 +1,10 @@
+# Raw data
+data/raw/*
+
+# Conda environment
+envs
+.env
+
 # History files
 .Rhistory
 .Rapp.history

@@ -7,6 +7,7 @@
 #' @returns Seurat object
 #' @example
 #' ds <- read_h5ad("~/Downloads/pbmc3k.h5ad)
+#' @export
 #' 
 read_h5ad <- function(file) {
   if (!stringr::str_detect(file, "h5ad")) stop("Please supply object.h5ad") 
