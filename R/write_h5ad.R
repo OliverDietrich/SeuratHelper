@@ -8,7 +8,10 @@
 #' @example 
 #' write_h5ad(ds, "~/Documents/pbmc3k.h5ad")
 #' 
-write_h5ad <- function(object, file) {
+write_h5ad <- function(
+  object = NULL, 
+  file   = NULL
+  ) {
   if (class(object) != "Seurat") stop("Please supply object.h5ad") 
   if (!stringr::str_detect(file, "h5ad")) stop("Please supply object.h5ad") 
   
