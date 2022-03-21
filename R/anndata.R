@@ -1,6 +1,3 @@
-################################################################################
-# Helper functions for interoperability between Seurat and anndata
-
 #' Read anndata object (.h5ad) and convert to Seurat object on disk
 #' 
 #' @param file Path to h5ad object
@@ -62,6 +59,7 @@ read_h5ad <- function(file) {
 #' 
 #' @param object Seurat object
 #' @param file Path to h5ad object (e.g. "~/Downloads/pbmc3k.h5ad")
+#' @export
 #' @example 
 #' write_h5ad(ds, "~/Documents/pbmc3k.h5ad")
 #' 
@@ -100,6 +98,3 @@ write_h5ad <- function(object, file) {
   }
   print("Done.")
 }
-
-# end of document
-################################################################################
