@@ -3,10 +3,13 @@
 #' @param file Path to h5ad object
 #' @returns Seurat object
 #' @export
-#' @example
+#' @examples
 #' ds <- read_h5ad("~/Downloads/pbmc3k.h5ad)
 #' 
-read_h5ad <- function(file) {
+read_h5ad <- function(
+  file = NULL
+  ) {
+  
   if (!stringr::str_detect(file, "h5ad")) stop("Please supply object.h5ad") 
   
   print("Begin conversion")
