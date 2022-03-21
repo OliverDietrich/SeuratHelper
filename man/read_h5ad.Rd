@@ -4,7 +4,7 @@
 \alias{read_h5ad}
 \title{Read anndata object (.h5ad) and convert to Seurat object on disk}
 \usage{
-read_h5ad(file)
+read_h5ad(file = NULL)
 }
 \arguments{
 \item{file}{Path to h5ad object}

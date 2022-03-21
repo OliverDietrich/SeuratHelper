@@ -3,4 +3,6 @@
 export(convert_names)
 export(plot_association)
 export(plot_embedding)
+export(read_h5ad)
 export(to_sce)
+export(write_h5ad)

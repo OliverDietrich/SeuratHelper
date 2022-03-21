@@ -11,6 +11,9 @@ source activate $env
 conda install -c conda-forge r-base=4.1.2 -y
 conda install -c conda-forge r-seurat=4.1.0 -y
 conda install -c bioconda bioconductor-rhdf5=2.38.0 -y
+conda install -c conda-forge r-viridis=0.6.2 -y
+conda install -c conda-forge r-devtools=2.4.3 -y
+
 
 # Rscript -e 'install.packages("package", repos = "https://cloud.r-project.org/")'
 

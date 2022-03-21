@@ -5,7 +5,7 @@
 #' @param object Seurat object
 #' @param file Path to h5ad object (e.g. "~/Downloads/pbmc3k.h5ad")
 #' @export
-#' @examples
+#' @example
 #' write_h5ad(ds, "~/Documents/pbmc3k.h5ad")
 #' 
 write_h5ad <- function(
