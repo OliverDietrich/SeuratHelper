@@ -1,3 +1,6 @@
+# R data sets
+*.Rds
+
 # History files
 .Rhistory
 .Rapp.history
