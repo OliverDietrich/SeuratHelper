@@ -8,7 +8,10 @@
 #' @example
 #' ds <- read_h5ad("~/Downloads/pbmc3k.h5ad)
 #' 
-read_h5ad <- function(file) {
+read_h5ad <- function(
+  file = NULL
+  ) {
+  
   if (!stringr::str_detect(file, "h5ad")) stop("Please supply object.h5ad") 
   
   print("Begin conversion")
@@ -84,12 +87,12 @@ write_h5ad <- function(object, file) {
       )
   
   # Add coldata (obs)
-  df <- ds@meta.data
+  df <- object@meta.data
   df <- cbind(data.frame("gene_name" = rownames(df)), df)
   rhdf5::h5write(obj = df, file = file, name = "obs")
   
   # Add meta features (var)
-  df <- ds@assays$RNA@meta.features
+  df <- object[[assay]]@meta.features
   df <- cbind(data.frame("gene_name" = rownames(df)), df)
   rhdf5::h5write(obj = df, file = file, name = "var")
   
