@@ -173,3 +173,67 @@ plot_embedding <- function(
     ) +
     xlim + ylim
 }
+
+#' Plot cell type markers on embedding
+#' 
+#' @param object
+#' @returns plot
+#' @export
+#'
+plot_markers_embedding <- function(object, markers=NULL,
+                                   embedding=tail(names(object@reductions), 1),
+                                   nrow=4, pt.size=1
+                                   ) {
+  
+  stopifnot(
+    !is.null(markers),
+    class(object) == "Seurat"
+  )
+  
+  # Fetch data
+  df <- data.frame(
+    x = ds@reductions[[embedding]]@cell.embeddings[, 1],
+    y = ds@reductions[[embedding]]@cell.embeddings[, 2]
+  )
+  for (i in markers) {
+    if (i %in% rownames(object)) {
+      df[[i]] <- object@assays$RNA@data[i, ]
+    }
+  }
+  
+  # Re-shape
+  df <- tidyr::gather(df, "gene", "count", -x, -y)
+  df$gene <- factor(df$gene, unique(df$gene))
+  
+  # Scale
+  df <- dplyr::group_by(df, gene)
+  df <- dplyr::mutate(df, count = scale(count)[,1])
+  
+  # Define range of scale
+  rng <- c(-2, 2)
+  df$count[df$count < min(rng)] <- min(rng)
+  df$count[df$count > max(rng)] <- max(rng)
+  
+  # Round points and average overlap
+  df$x <- round(df$x, 2)
+  df$y <- round(df$y, 2)
+  df <- dplyr::summarise(dplyr::group_by(df, gene, x, y), count = mean(count))
+  
+  # Plot
+  plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, col = count)) +
+    ggplot2::geom_point(size = pt.size) +
+    ggplot2::facet_wrap(~gene, nrow = nrow) +
+    ggplot2::scale_color_distiller(palette = "RdBu") +
+    ggplot2::theme_classic(20) +
+    ggplot2::coord_fixed() +
+    ggplot2::guides(
+      color = ggplot2::guide_colorbar(barwidth = 1, barheight = 10, ticks = F)
+    ) +
+    ggplot2::theme(
+      axis.text = ggplot2::element_blank(),
+      axis.ticks = ggplot2::element_blank()
+    ) +
+    ggplot2::labs(x = "UMAP-1", y = "UMAP-2")
+  
+  return(plot)
+}
