@@ -176,7 +176,7 @@ plot_embedding <- function(
 
 #' Plot cell type markers on embedding
 #' 
-#' @param object
+#' @param object SeuratObject
 #' @returns plot
 #' @export
 #'

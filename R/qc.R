@@ -1,8 +1,8 @@
 #' Add QC metrics
 #' 
 #' @param object SeuratObject
-#' 
 #' @returns SeuratObject
+#' @export
 #' 
 add_qc_metrics <- function(object) {
   

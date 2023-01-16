@@ -3,8 +3,6 @@
 #' @param file Path to h5ad object
 #' @returns Seurat object
 #' @export
-#' @example
-#' ds <- read_h5ad("~/Downloads/pbmc3k.h5ad")
 #' 
 read_h5ad <- function(
   file = NULL
