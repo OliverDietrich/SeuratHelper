@@ -11,7 +11,7 @@ add_qc_metrics <- function(object) {
   )
   
   # Library size
-  object$libsize <- ds$nCount_RNA
+  object$libsize <- object$nCount_RNA
   
   # Features
   object$ngenes <- object$nFeature_RNA
@@ -29,8 +29,8 @@ add_qc_metrics <- function(object) {
 #' Plot QC metrics
 #' 
 #' @param object SeuratObject
-#' 
 #' @returns plot
+#' @export
 #' 
 plot_qc_metrics <- function(object, libsize = "libsize", 
                             metrics = c("ngenes", "percent.mt"),
@@ -54,11 +54,11 @@ plot_qc_metrics <- function(object, libsize = "libsize",
   if (is.null(quality)) {
     df$qc <- ""
   } else {
-    df$qc <- ds@meta.data[[quality]]
+    df$qc <- object@meta.data[[quality]]
   }
   
   if (!is.null(color_by)) {
-    df$color_by <- ds@meta.data[[color_by]]
+    df$color_by <- object@meta.data[[color_by]]
     main <- ggplot2::geom_point(ggplot2::aes(color = color_by), size = .25)
   } else {
     main <- ggplot2::geom_bin2d(bins = 200)
