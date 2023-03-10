@@ -31,7 +31,7 @@ plot_embedding <- function(
   label      = FALSE,
   label.size = 4,
   embedding  = tail(names(object@reductions), 1),
-  pointsize  = NULL,
+  pt.size    = NULL,
   dim.1      = 1,
   dim.2      = 2,
   brush      = NULL,
@@ -45,7 +45,8 @@ plot_embedding <- function(
   alpha      = 1,
   shape      = 20,
   color.transform = "",
-  legend.position = "right"
+  legend.position = "right",
+  legend.rows = NULL
 ) {
   
   # Specify conditions that are required for the function to work
@@ -78,14 +79,16 @@ plot_embedding <- function(
   }
   
   # Compute values for input arguments that are NULL
-  if (is.null(pointsize)) {
+  if (is.null(pt.size)) {
     pointsize <- dplyr::case_when(
       dplyr::between(dim(object)[2],     0,    250) ~ 3,
       dplyr::between(dim(object)[2],   250,   1000) ~ 2,
-      dplyr::between(dim(object)[2],  1000,   5000) ~ 1,
-      dplyr::between(dim(object)[2],  5000,  50000) ~ 0.1,
+      dplyr::between(dim(object)[2],  1000,   10000) ~ 1,
+      dplyr::between(dim(object)[2],  10000,  50000) ~ 0.1,
       dim(object)[2] > 50000 ~ 0.001
     ) # write function to smooth that
+  } else {
+    pointsize <- pt.size
   }
   # Convert gene names to/from synonyms
   if (!color %in% rownames(object) & color %in% dict[[to]]) {
@@ -122,6 +125,9 @@ plot_embedding <- function(
   }
   
   # Create color scale & guide elements
+  if (is.null(legend.rows)) {
+    legend.rows <- ceiling(length(unique(df$col))/10)
+  }
   if (class(df$col) %in% c("numeric", "integer")) {
     color_guide <- ggplot2::guide_colorbar(
       barwidth = 1, barheight = 15, ticks = FALSE, frame.colour = "black"
@@ -130,7 +136,7 @@ plot_embedding <- function(
     groups <- FALSE
   } else {
     color_guide <- ggplot2::guide_legend(
-      override.aes = list(size = 8), ncol = ceiling(length(unique(df$col))/10)
+      override.aes = list(size = 8), ncol = legend.rows
     )
     ann_cols <- NULL
     groups <- TRUE
