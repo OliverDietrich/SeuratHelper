@@ -66,8 +66,3 @@ Options include log, log2, log1p, log10}
 This function creates a plot of a cell embedding stored in a Seurat object.
 Cells can be colored by gene expression or metadata.
 }
-\examples{
-#Plot CD3D on umap embedding in Seurat object
-plot_embedding(object, "CD3D", "umap")
-
-}

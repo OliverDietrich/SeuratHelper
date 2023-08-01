@@ -25,7 +25,8 @@ This is a conversion function for gene names. It takes a vector of gene names
 and returns their corresponding synonyms (e.g. gene IDs) from a dictionary.
 }
 \examples{
-# Convert human CD3D from 
-convert_features("CD3D", features, 1, 2)
+# Convert human CD3D from gene name to ENSEMBL ID
+features <- data.frame('name'="CD3D", 'id'="ENSG00000167286")
+convert_names("CD3D", features, 1, 2)
 
 }

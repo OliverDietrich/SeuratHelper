@@ -8,8 +8,6 @@
 #' (all other assays will be stored as altExps, defaults to first assay in list)
 #' @return Object of class 'SingleCellExperiment'
 #' @export
-#' @examples
-#' sce <- to_sce(ds)
 #' 
 to_sce <- function(
   object = NULL,

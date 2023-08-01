@@ -21,9 +21,6 @@
 #' Options include log, log2, log1p, log10
 #' @param legend.position Position of the color legend.
 #' @export
-#' @examples 
-#' #Plot CD3D on umap embedding in Seurat object
-#' plot_embedding(object, "CD3D", "umap")
 #' 
 plot_embedding <- function(
   object     = NULL,

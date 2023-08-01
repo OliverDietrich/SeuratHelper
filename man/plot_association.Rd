@@ -13,8 +13,3 @@ plot_association(object = NULL)
 This function creates a plot showing the association of elements of metadata
 or expression of cells stored in a Seurat object.
 }
-\examples{
-# Plot library size against number of detected features
-plot_association(object, "nCount_RNA", "nFeature_RNA")
-
-}
