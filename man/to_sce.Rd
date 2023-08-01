@@ -19,7 +19,3 @@ Object of class 'SingleCellExperiment'
 This is a conversion function between R objects from class 'Seurat' to
 'SingleCellExperiment' to increase interoperability.
 }
-\examples{
-sce <- to_sce(ds)
-
-}

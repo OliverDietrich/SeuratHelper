@@ -10,7 +10,7 @@ plot_embedding(
   label = FALSE,
   label.size = 4,
   embedding = tail(names(object@reductions), 1),
-  pointsize = NULL,
+  pt.size = NULL,
   dim.1 = 1,
   dim.2 = 2,
   brush = NULL,
@@ -24,7 +24,8 @@ plot_embedding(
   alpha = 1,
   shape = 20,
   color.transform = "",
-  legend.position = "right"
+  legend.position = "right",
+  legend.rows = NULL
 )
 }
 \arguments{
@@ -35,8 +36,6 @@ plot_embedding(
 \item{label}{Type of group labels (text or label)}
 
 \item{embedding}{Name of the embedding (e.g. 'umap')}
-
-\item{pointsize}{Point size}
 
 \item{brush}{Brushed points (xmin, xmax, ymin, ymax)}
 
@@ -60,13 +59,10 @@ plot_embedding(
 Options include log, log2, log1p, log10}
 
 \item{legend.position}{Position of the color legend.}
+
+\item{pointsize}{Point size}
 }
 \description{
 This function creates a plot of a cell embedding stored in a Seurat object.
 Cells can be colored by gene expression or metadata.
-}
-\examples{
-#Plot CD3D on umap embedding in Seurat object
-plot_embedding(object, "CD3D", "umap")
-
 }

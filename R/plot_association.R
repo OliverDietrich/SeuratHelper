@@ -5,9 +5,6 @@
 #' 
 #' @param object Seurat object
 #' @export
-#' @examples
-#' # Plot library size against number of detected features
-#' plot_association(object, "nCount_RNA", "nFeature_RNA")
 #' 
 plot_association <- function(
   object = NULL
