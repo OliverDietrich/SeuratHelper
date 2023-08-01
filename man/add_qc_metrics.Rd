@@ -4,7 +4,7 @@
 \alias{add_qc_metrics}
 \title{Add QC metrics}
 \usage{
-add_qc_metrics(object)
+add_qc_metrics(object, assay = Seurat::DefaultAssay(object))
 }
 \arguments{
 \item{object}{SeuratObject}

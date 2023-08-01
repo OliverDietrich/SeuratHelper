@@ -6,14 +6,37 @@
 \usage{
 plot_qc_metrics(
   object,
-  libsize = "libsize",
-  metrics = c("ngenes", "percent.mt"),
-  quality = NULL,
-  color_by = NULL
+  x = "libsize",
+  metrics = c("ngenes", "percent.mt", "percent.rp"),
+  split_by = NULL,
+  split_by_max = 5,
+  color_by = NULL,
+  pt.bin = TRUE,
+  nbins = 100,
+  pt.size = 0.5,
+  theme.size = 15
 )
 }
 \arguments{
 \item{object}{SeuratObject}
+
+\item{x}{Metadata slot for x-axis (default: libsize)}
+
+\item{metrics}{Metadata slots for y-axis}
+
+\item{split_by}{Metadat slot to split plot vertically}
+
+\item{split_by_max}{Maximum number of allowed categories for 'split_by'}
+
+\item{color_by}{Metadata slot to color points by}
+
+\item{pt.bin}{Boolean, bin points to handle overplotting (uses bin2d)}
+
+\item{nbins}{Number of bins used in bin2d}
+
+\item{pt.size}{Point size}
+
+\item{theme.size}{Theme size}
 }
 \value{
 plot
