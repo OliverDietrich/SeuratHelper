@@ -14,6 +14,14 @@ plot_markers_embedding(
 }
 \arguments{
 \item{object}{SeuratObject}
+
+\item{markers}{Character vector of marker genes}
+
+\item{embedding}{Embedding name (slot in reductions)}
+
+\item{nrow}{Number of rows}
+
+\item{pt.size}{Point size}
 }
 \value{
 plot

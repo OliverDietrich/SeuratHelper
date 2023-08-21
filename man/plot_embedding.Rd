@@ -8,7 +8,7 @@ plot_embedding(
   object = NULL,
   color = "",
   label = FALSE,
-  label.size = 4,
+  label.size = 6,
   embedding = tail(names(object@reductions), 1),
   pt.size = NULL,
   dim.1 = 1,

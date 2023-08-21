@@ -26,7 +26,7 @@ plot_embedding <- function(
   object     = NULL,
   color      = "",
   label      = FALSE,
-  label.size = 4,
+  label.size = 6,
   embedding  = tail(names(object@reductions), 1),
   pt.size    = NULL,
   dim.1      = 1,
@@ -161,7 +161,7 @@ plot_embedding <- function(
   # Order cells by color
   df <- df[order(df$col), ]
   
-  ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
+  plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
     ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape) +
     groups +
     ggplot2::coord_fixed() +
@@ -172,14 +172,23 @@ plot_embedding <- function(
     ann_cols +
     ggplot2::theme_void(20) +
     ggplot2::theme(
-      legend.position = legend.position
+      legend.position = legend.position,
+      title = ggplot2::element_text(vjust = .5),
+      panel.border = ggplot2::element_rect(size = .5, fill=NA)
     ) +
     xlim + ylim
+  
+  return(plot)
 }
 
 #' Plot cell type markers on embedding
 #' 
 #' @param object SeuratObject
+#' @param markers Character vector of marker genes
+#' @param embedding Embedding name (slot in reductions)
+#' @param nrow Number of rows
+#' @param pt.size Point size
+#' 
 #' @returns plot
 #' @export
 #'
@@ -195,8 +204,8 @@ plot_markers_embedding <- function(object, markers=NULL,
   
   # Fetch data
   df <- data.frame(
-    x = ds@reductions[[embedding]]@cell.embeddings[, 1],
-    y = ds@reductions[[embedding]]@cell.embeddings[, 2]
+    x = object@reductions[[embedding]]@cell.embeddings[, 1],
+    y = object@reductions[[embedding]]@cell.embeddings[, 2]
   )
   for (i in markers) {
     if (i %in% rownames(object)) {
@@ -227,16 +236,19 @@ plot_markers_embedding <- function(object, markers=NULL,
     ggplot2::geom_point(size = pt.size) +
     ggplot2::facet_wrap(~gene, nrow = nrow) +
     ggplot2::scale_color_distiller(palette = "RdBu") +
-    ggplot2::theme_classic(20) +
+    ggplot2::theme_void(20) +
     ggplot2::coord_fixed() +
     ggplot2::guides(
       color = ggplot2::guide_colorbar(barwidth = 1, barheight = 10, ticks = F)
     ) +
     ggplot2::theme(
       axis.text = ggplot2::element_blank(),
-      axis.ticks = ggplot2::element_blank()
+      axis.ticks = ggplot2::element_blank(),
+      panel.border = ggplot2::element_rect(size = .5, fill=NA)
     ) +
-    ggplot2::labs(x = "UMAP-1", y = "UMAP-2")
+    ggplot2::labs(title = "Normalized and scaled gene expression",
+                  subtitle = paste("Embedding:", embedding), 
+                  col = "z-score")
   
   return(plot)
 }

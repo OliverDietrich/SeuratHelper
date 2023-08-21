@@ -19,15 +19,13 @@ add_qc_metrics <- function(object, assay = Seurat::DefaultAssay(object)) {
   # Mitochondrial genes
   mt.genes <- rownames(object)[grep("^MT-", rownames(object))]
   object$percent.mt <- round(
-    Matrix::colSums(object[[assay]][mt.genes, ]) /
-      object$libsize, 3
+    Matrix::colSums(object[[assay]][mt.genes, ]) / object$libsize, 3
   ) * 100
   
   # Ribosomal genes
   rp.genes <- rownames(object)[grep("^RP", rownames(object))]
   object$percent.rp <- round(
-    Matrix::colSums(object[[assay]][rp.genes, ]) /
-      object$libsize, 3
+    Matrix::colSums(object[[assay]][rp.genes, ]) / object$libsize, 3
   ) * 100
   
   return(object)
