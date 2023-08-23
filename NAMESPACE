@@ -3,6 +3,7 @@
 export(add_qc_metrics)
 export(combinations)
 export(convert_names)
+export(heatmap_expression)
 export(plot_association)
 export(plot_embedding)
 export(plot_markers_embedding)
