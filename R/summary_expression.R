@@ -49,8 +49,9 @@ AddAUC <- function(
 #' 
 #' @param object Seurat object
 #' @param features Character of genes to plot
-#' @param coldata 
-#' @param rowdata
+#' @param coldata Annotation for columns
+#' @param rowdata Annotation for rows
+#' @param rowdata_label Name of the row annotation
 #' @param collapse_replicates Whether to average over groups of cells
 #' @param title Plot title
 #' @param limits Limits of the color scale
@@ -62,7 +63,7 @@ heatmap_expression <- function(
     features = NULL,
     coldata = NULL,
     rowdata = NULL,
-    rowdata_label = "cluster",
+    rowdata_label = "group",
     collapse_replicates = TRUE,
     colors = NULL,
     scale = TRUE,
@@ -112,7 +113,7 @@ heatmap_expression <- function(
   
   if (is.null(rowdata)) {
     rann <- NA
-    gaps_row <- NA
+    gaps_row <- NULL
   } else if (class(rowdata) %in% c("character", "factor") &
              length(rowdata)==length(features)) {
     rann <- data.frame(

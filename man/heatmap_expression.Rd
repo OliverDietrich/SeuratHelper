@@ -9,7 +9,7 @@ heatmap_expression(
   features = NULL,
   coldata = NULL,
   rowdata = NULL,
-  rowdata_label = "cluster",
+  rowdata_label = "group",
   collapse_replicates = TRUE,
   colors = NULL,
   scale = TRUE,
@@ -29,7 +29,11 @@ heatmap_expression(
 
 \item{features}{Character of genes to plot}
 
-\item{coldata}{}
+\item{coldata}{Annotation for columns}
+
+\item{rowdata}{Annotation for rows}
+
+\item{rowdata_label}{Name of the row annotation}
 
 \item{collapse_replicates}{Whether to average over groups of cells}
 
