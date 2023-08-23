@@ -9,7 +9,11 @@ plot_markers_embedding(
   markers = NULL,
   embedding = tail(names(object@reductions), 1),
   nrow = 4,
-  pt.size = 1
+  pt.size = 1,
+  assay = NULL,
+  slot = "data",
+  scale = TRUE,
+  pl.title = NULL
 )
 }
 \arguments{
