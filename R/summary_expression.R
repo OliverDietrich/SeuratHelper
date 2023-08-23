@@ -11,6 +11,8 @@
 #' @param slot
 #' @returns SeuratObject with AUC added as 'assay'
 #'
+#' @export
+#'
 AddAUC <- function(
     object=NULL, 
     features=NULL,
