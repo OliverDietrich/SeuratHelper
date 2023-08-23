@@ -194,7 +194,11 @@ plot_embedding <- function(
 #'
 plot_markers_embedding <- function(object, markers=NULL,
                                    embedding=tail(names(object@reductions), 1),
-                                   nrow=4, pt.size=1
+                                   nrow=4, pt.size=1,
+                                   assay = NULL,
+                                   slot = "data",
+                                   scale = TRUE,
+                                   pl.title = NULL
                                    ) {
   
   stopifnot(
@@ -202,14 +206,18 @@ plot_markers_embedding <- function(object, markers=NULL,
     class(object) == "Seurat"
   )
   
+  if (is.null(assay)) {
+    assay <- Seurat::DefaultAssay(object)
+  }
+  
   # Fetch data
   df <- data.frame(
     x = object@reductions[[embedding]]@cell.embeddings[, 1],
     y = object@reductions[[embedding]]@cell.embeddings[, 2]
   )
   for (i in markers) {
-    if (i %in% rownames(object)) {
-      df[[i]] <- object@assays$RNA@data[i, ]
+    if (i %in% rownames(slot(object[[assay]], slot))) {
+      df[[i]] <- slot(object[[assay]], slot)[i, ]
     }
   }
   
@@ -218,8 +226,19 @@ plot_markers_embedding <- function(object, markers=NULL,
   df$gene <- factor(df$gene, unique(df$gene))
   
   # Scale
-  df <- dplyr::group_by(df, gene)
-  df <- dplyr::mutate(df, count = scale(count)[,1])
+  if (scale) {
+    df <- dplyr::group_by(df, gene)
+    df <- dplyr::mutate(df, count = scale(count)[,1])
+    color_scale <- ggplot2::scale_color_distiller(palette = "RdBu")
+    plot_title <- "Normalized gene expression"
+  } else {
+    plot_title <- "Normalized and scaled gene expression"
+    color_scale <- viridis::scale_color_viridis(option = "A", direction = -1)
+  }
+  
+  if (!is.null(pl.title)) {
+    plot_title <- pl.title
+  }
   
   # Define range of scale
   rng <- c(-2, 2)
@@ -235,7 +254,7 @@ plot_markers_embedding <- function(object, markers=NULL,
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, col = count)) +
     ggplot2::geom_point(size = pt.size) +
     ggplot2::facet_wrap(~gene, nrow = nrow) +
-    ggplot2::scale_color_distiller(palette = "RdBu") +
+    color_scale +
     ggplot2::theme_void(20) +
     ggplot2::coord_fixed() +
     ggplot2::guides(
@@ -246,7 +265,7 @@ plot_markers_embedding <- function(object, markers=NULL,
       axis.ticks = ggplot2::element_blank(),
       panel.border = ggplot2::element_rect(size = .5, fill=NA)
     ) +
-    ggplot2::labs(title = "Normalized and scaled gene expression",
+    ggplot2::labs(title = plot_title,
                   subtitle = paste("Embedding:", embedding), 
                   col = "z-score")
   

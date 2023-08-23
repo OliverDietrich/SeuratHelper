@@ -39,7 +39,9 @@ summarize_groups <- function (
 #' @export
 #'
 combinations <- function(x, sep = "-") {
-  apply(x, 1, function(x) paste0(x, collapse = sep))
+  result <- apply(x, 1, function(x) paste0(x, collapse = sep))
+  result <- factor(result)
+  return(result)
 }
 
 #' Create unique combinations from a data.frame of factors
