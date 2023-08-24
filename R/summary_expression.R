@@ -97,8 +97,17 @@ heatmap_expression <- function(
       Idents = coldata
     )
   } else if (all(coldata %in% names(object@meta.data))) {
-    cann <- object@meta.data[, coldata]
-    coldata <- combinations(cann)
+    if (length(coldata) == 1) {
+      cann <- data.frame(
+        row.names = colnames(object),
+        label = ds[[coldata]]
+      )
+      names(cann) <- coldata
+      coldata <- combinations(cann)
+    } else {
+      cann <- object@meta.data[, coldata]
+      coldata <- combinations(cann)
+    }
   } else {
     stop("Coldata has not been specified correctly. Exiting.")
   }
@@ -133,9 +142,9 @@ heatmap_expression <- function(
   }
   
   if (collapse_replicates) {
-    cann <- unique_combinations(cann)
     mat <- summarize_groups(slot(object[[assay]], slot)[features[index], ], 
                             coldata)
+    cann <- unique_combinations(cann)[colnames(mat), ]
   } else {
     mat <- slot(object[[assay]], slot)[features[index], order(coldata)]
   }
