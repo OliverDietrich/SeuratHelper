@@ -32,7 +32,7 @@ AddAUC <- function(
     assay <- Seurat::DefaultAssay(object)
   }
   
-  if (name %in% names(ds@assays) & force == FALSE) {
+  if (name %in% names(object@assays) & force == FALSE) {
     stop(paste("Assay", name, " already exists. To replace set force = TRUE"))
   }
  
@@ -75,9 +75,7 @@ heatmap_expression <- function(
     title = "Differentially expressed genes",
     show_rownames = FALSE,
     show_colnames = FALSE,
-    fontsize = 10,
-    fontsize_row = fontsize,
-    fontsize_col = fontsize
+    ...
   ) {
   
   stopifnot(
@@ -91,7 +89,7 @@ heatmap_expression <- function(
   
   if (is.null(coldata)) {
     message("Coldata not specified. Defaulting to Idents")
-    coldata <- Seurat::Idents(ds)
+    coldata <- Seurat::Idents(object)
     cann <- data.frame(
       row.names = colnames(object),
       Idents = coldata
@@ -100,7 +98,7 @@ heatmap_expression <- function(
     if (length(coldata) == 1) {
       cann <- data.frame(
         row.names = colnames(object),
-        label = ds[[coldata]]
+        label = object[[coldata]]
       )
       names(cann) <- coldata
       coldata <- combinations(cann)
@@ -116,7 +114,7 @@ heatmap_expression <- function(
   if (length(index) < length(features)) {
     leftout <- features[!features %in% features[index]]
     warning(paste("The following features were not found in the assay:",
-                  leftout, "and will be ignored."))
+                  leftout, ". Will be removed..."))
   }
   if (length(index) == 0) {
    stop("No matching features specified.") 
@@ -129,7 +127,7 @@ heatmap_expression <- function(
              length(rowdata)==length(features)) {
     rann <- data.frame(
       row.names = features[index],
-      label = rowdata
+      label = rowdata[index]
     )
     names(rann) <- rowdata_label
     gaps_row <- head(as.numeric(cumsum(table(rann[,1]))), -1)
@@ -143,10 +141,15 @@ heatmap_expression <- function(
   
   if (collapse_replicates) {
     mat <- summarize_groups(slot(object[[assay]], slot)[features[index], ], 
-                            coldata)
-    cann <- unique_combinations(cann)[colnames(mat), ]
+                            coldata
+    )
+    cann <- unique_combinations(cann)
+    ind <- rownames(cann) %in% colnames(mat)
+    cann <- subset(cann, ind)
   } else {
-    mat <- slot(object[[assay]], slot)[features[index], order(coldata)]
+    mat <- as.matrix(
+      slot(object[[assay]], slot)[features[index], order(coldata)]
+    )
   }
   
   if (scale) {
@@ -169,16 +172,15 @@ heatmap_expression <- function(
     annotation_col = cann,
     annotation_row = rann,
     annotation_colors = ann_colors,
-    show_colnames = show_colnames,
+    show_colnames = show_colnames, 
     show_rownames = show_rownames,
     color  = colorRampPalette(
       rev(RColorBrewer::brewer.pal(n = 9, name = "RdBu")))(length(breaks)), 
     gaps_col = head(as.numeric(cumsum(table(cann[,1]))), -1),
     gaps_row = gaps_row,
-    fontsize_row = fontsize_row,
-    fontsize_col = fontsize_col,
     main = title,
-    silent = TRUE
+    silent = TRUE, 
+    ...
     )
   
   return(plot)
