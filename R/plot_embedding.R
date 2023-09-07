@@ -29,6 +29,7 @@ plot_embedding <- function(
   label.size = 6,
   embedding  = tail(names(object@reductions), 1),
   pt.size    = NULL,
+  pt.stroke  = NULL,
   dim.1      = 1,
   dim.2      = 2,
   brush      = NULL,
@@ -87,6 +88,11 @@ plot_embedding <- function(
   } else {
     pointsize <- pt.size
   }
+  if (is.null(pt.stroke)) {
+    pointstroke <- 1
+  } else {
+    pointstroke <- pt.stroke
+  }
   # Convert gene names to/from synonyms
   if (!color %in% rownames(object) & color %in% dict[[to]]) {
     color <- convert_names(color, dict, to, from)
@@ -103,7 +109,15 @@ plot_embedding <- function(
   # Retrieve expression/metadata for color
   if (color %in% names(object@meta.data)) {
     df$col <- object@meta.data[[color]]
-  } else if (color %in% rownames(object)) {
+  } else if (color %in% rownames(slot(object@assays[[assay]], slot))) {
+    df$col <- slot(object@assays[[assay]], slot)[color, ]
+  } else if (color %in% unlist(lapply(object@assays, rownames))) {
+    assay <- stringr::str_remove_all(
+      names(which(unlist(lapply(object@assays, rownames)) == color)), 
+      "\\d"
+      )
+    message(paste("Expression/metadata found in different assay.",
+                   "Switching to", assay))
     df$col <- slot(object@assays[[assay]], slot)[color, ]
   } else {
     warning(paste0("Expression/metadata for '", color, "' not found."))
@@ -162,7 +176,8 @@ plot_embedding <- function(
   df <- df[order(df$col), ]
   
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
-    ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape) +
+    ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape,
+                        stroke = pointstroke) +
     groups +
     ggplot2::coord_fixed() +
     ggplot2::labs(col = NULL, title = title) +
