@@ -209,20 +209,29 @@ plot_embedding <- function(
 #'
 plot_markers_embedding <- function(object, markers=NULL,
                                    embedding=tail(names(object@reductions), 1),
-                                   nrow=4, pt.size=1,
+                                   nrow=4, pt.size=1, pt.stroke=1,
                                    assay = NULL,
                                    slot = "data",
                                    scale = TRUE,
-                                   pl.title = NULL
+                                   markers.max = 100,
+                                   pl.title = NULL,
+                                   col.title = NULL
                                    ) {
   
   stopifnot(
-    !is.null(markers),
     class(object) == "Seurat"
   )
   
   if (is.null(assay)) {
     assay <- Seurat::DefaultAssay(object)
+  }
+  
+  if (is.null(markers)) {
+    warning("No markers specified. Defaulting to whole assay.")
+    markers <-rownames(object@assays[[assay]])
+    if (length(markers) > markers.max) {
+      stop(paste("To many features in assay:", assay))
+    }
   }
   
   # Fetch data
@@ -245,14 +254,19 @@ plot_markers_embedding <- function(object, markers=NULL,
     df <- dplyr::group_by(df, gene)
     df <- dplyr::mutate(df, count = scale(count)[,1])
     color_scale <- ggplot2::scale_color_distiller(palette = "RdBu")
-    plot_title <- "Normalized gene expression"
-  } else {
     plot_title <- "Normalized and scaled gene expression"
+    col_title <- "z-score"
+  } else {
+    plot_title <- "Normalized gene expression"
+    col_title <- "logcount"
     color_scale <- viridis::scale_color_viridis(option = "A", direction = -1)
   }
   
   if (!is.null(pl.title)) {
     plot_title <- pl.title
+  }
+  if (!is.null(col.title)) {
+    col_title <- col.title
   }
   
   # Define range of scale
@@ -267,7 +281,7 @@ plot_markers_embedding <- function(object, markers=NULL,
   
   # Plot
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, col = count)) +
-    ggplot2::geom_point(size = pt.size) +
+    ggplot2::geom_point(size = pt.size, stroke = pt.stroke) +
     ggplot2::facet_wrap(~gene, nrow = nrow) +
     color_scale +
     ggplot2::theme_void(20) +
@@ -282,7 +296,7 @@ plot_markers_embedding <- function(object, markers=NULL,
     ) +
     ggplot2::labs(title = plot_title,
                   subtitle = paste("Embedding:", embedding), 
-                  col = "z-score")
+                  col = col_title)
   
   return(plot)
 }

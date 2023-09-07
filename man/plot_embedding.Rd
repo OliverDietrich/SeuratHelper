@@ -11,6 +11,7 @@ plot_embedding(
   label.size = 6,
   embedding = tail(names(object@reductions), 1),
   pt.size = NULL,
+  pt.stroke = NULL,
   dim.1 = 1,
   dim.2 = 2,
   brush = NULL,

@@ -19,9 +19,7 @@ heatmap_expression(
   title = "Differentially expressed genes",
   show_rownames = FALSE,
   show_colnames = FALSE,
-  fontsize = 10,
-  fontsize_row = fontsize,
-  fontsize_col = fontsize
+  ...
 )
 }
 \arguments{
