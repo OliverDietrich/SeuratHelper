@@ -71,10 +71,12 @@ plot_qc_metrics <- function(object, x = "libsize",
   }
   if (is.null(split_by)) {
     df$split <- ""
-  } else if (length(unique(object@meta.data[[split_by]])) < split_by_max) {
+  } else if (length(unique(object@meta.data[[split_by]])) <= split_by_max) {
     df$split <- factor(object@meta.data[[split_by]])
+  } else if (length(unique(object@meta.data[[split_by]])) > split_by_max) {
+    stop(paste(split_by, "has too many categories."))
   } else {
-    warning(paste(split_by, "is not part of the objects metadata."))
+    stop(paste(split_by, "is not part of the objects metadata."))
   }
   
   # Bin points
