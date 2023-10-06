@@ -202,7 +202,7 @@ plot_embedding <- function(
     } else if (class(df$col) %in% c("numeric", "integer", "array")) {
       FUN <- mean
     } else {
-      FUN <- max # TODO: select most common label, break ties at random
+      FUN <- select_most_frequent_category
     }
     df <- summarize_overlapping_rows(df, breaks = pt.aggr.breaks, FUN=FUN)
   } else {
@@ -246,7 +246,12 @@ plot_embedding <- function(
 #'
 plot_markers_embedding <- function(object, markers=NULL,
                                    embedding=tail(names(object@reductions), 1),
-                                   nrow=4, pt.size=1, pt.stroke=1, pt.shape=16,
+                                   pt.aggr    = TRUE,
+                                   pt.aggr.breaks = 300,
+                                   pt.size    = .5,
+                                   pt.stroke  = .1,
+                                   pt.shape=16,
+                                   nrow=floor(sqrt(length(markers))),
                                    assay = NULL,
                                    slot = "data",
                                    scale = TRUE,
@@ -271,7 +276,7 @@ plot_markers_embedding <- function(object, markers=NULL,
     }
   }
   
-  # Fetch data
+  # Fetch data -----------------------------------------------------------------
   df <- data.frame(
     x = object@reductions[[embedding]]@cell.embeddings[, 1],
     y = object@reductions[[embedding]]@cell.embeddings[, 2]
@@ -282,11 +287,18 @@ plot_markers_embedding <- function(object, markers=NULL,
     }
   }
   
-  # Re-shape
+  # Re-shape -------------------------------------------------------------------
   df <- tidyr::gather(df, "gene", "count", -x, -y)
   df$gene <- factor(df$gene, unique(df$gene))
   
-  # Scale
+  # Order/summarize points -----------------------------------------------------
+  if (pt.aggr) {
+    df$x <- round(df$x, 2)
+    df$y <- round(df$y, 2)
+    df <- dplyr::summarise(dplyr::group_by(df, gene, x, y), count = mean(count))
+  }
+  
+  # Scale ----------------------------------------------------------------------
   if (scale) {
     df <- dplyr::group_by(df, gene)
     df <- dplyr::mutate(df, count = scale(count)[,1])
@@ -306,15 +318,10 @@ plot_markers_embedding <- function(object, markers=NULL,
     col_title <- col.title
   }
   
-  # Define range of scale
+  # Define range of scale ------------------------------------------------------
   rng <- c(-2, 2)
   df$count[df$count < min(rng)] <- min(rng)
   df$count[df$count > max(rng)] <- max(rng)
-  
-  # Round points and average overlap
-  df$x <- round(df$x, 2)
-  df$y <- round(df$y, 2)
-  df <- dplyr::summarise(dplyr::group_by(df, gene, x, y), count = mean(count))
   
   # Plot
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, col = count)) +
@@ -336,4 +343,14 @@ plot_markers_embedding <- function(object, markers=NULL,
                   col = col_title)
   
   return(plot)
+}
+
+#' Select maximum occuring category in vector
+#' 
+#' @param v Vector
+#' 
+#' @export
+select_most_frequent_category <- function(v) {
+  index <- table(v)
+  sample(names(index[index == max(index)]), 1)
 }
