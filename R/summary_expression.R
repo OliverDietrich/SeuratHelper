@@ -39,7 +39,7 @@ AddAUC <- function(
   ranks <- AUCell::AUCell_buildRankings(
     exprMat = slot(object@assays[[assay]], slot)
       )
-  aucs <- AUCell::AUCell_calcAUC(gsets, ranks) # 400 - 7000
+  aucs <- AUCell::AUCell_calcAUC(features, ranks) # 400 - 7000
   aucs <- as.data.frame(t(aucs@assays@data$AUC))
   
   object[[name]] <- Seurat::CreateAssayObject(data = t(aucs))

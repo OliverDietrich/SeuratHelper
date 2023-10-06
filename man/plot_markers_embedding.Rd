@@ -11,6 +11,7 @@ plot_markers_embedding(
   nrow = 4,
   pt.size = 1,
   pt.stroke = 1,
+  pt.shape = 16,
   assay = NULL,
   slot = "data",
   scale = TRUE,

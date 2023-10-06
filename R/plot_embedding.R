@@ -25,8 +25,8 @@
 plot_embedding <- function(
   object     = NULL,
   color      = "",
+  split.by   = NULL, # TODO
   label      = FALSE,
-  label.size = 6,
   embedding  = tail(names(object@reductions), 1),
   pt.size    = NULL,
   pt.stroke  = NULL,
@@ -35,8 +35,12 @@ plot_embedding <- function(
   brush      = NULL,
   cells      = NULL,
   n.cells    = NULL,
-  assay      = "RNA",
+  assay      = Seurat::DefaultAssay(object),
   slot       = "data",
+  theme.size = 15, # TODO
+  label.size = 6,
+  split.by.rows = NULL,
+  split.by.max = 20,
   dict       = object@misc$features,
   from       = 1,
   to         = 2,
@@ -47,7 +51,6 @@ plot_embedding <- function(
   legend.rows = NULL
 ) {
   
-  # Specify conditions that are required for the function to work
   stopifnot(
     class(object) == "Seurat",
     length(color) == 1,
@@ -62,7 +65,7 @@ plot_embedding <- function(
   # Create annotations based on input (some inputs are changed)
   title <- color
   
-  # Subset data based on cells
+  # Subset data ----------------------------------------------------------------
   if (!is.null(cells)) {
     object <- subset(object, cells = cells)
   } else if (!is.null(n.cells)) {
@@ -76,7 +79,7 @@ plot_embedding <- function(
     ylim <- ggplot2::ylim(brush$ymin, brush$ymax)
   }
   
-  # Compute values for input arguments that are NULL
+  # Replace NULL values --------------------------------------------------------
   if (is.null(pt.size)) {
     pointsize <- dplyr::case_when(
       dplyr::between(dim(object)[2],     0,    250) ~ 3,
@@ -89,7 +92,7 @@ plot_embedding <- function(
     pointsize <- pt.size
   }
   if (is.null(pt.stroke)) {
-    pointstroke <- 1
+    pointstroke <- .25
   } else {
     pointstroke <- pt.stroke
   }
@@ -106,7 +109,7 @@ plot_embedding <- function(
   df <- as.data.frame(object@reductions[[embedding]]@cell.embeddings[, rng])
   names(df) <- c("x", "y")
   
-  # Retrieve expression/metadata for color
+  # Color ----------------------------------------------------------------------
   if (color %in% names(object@meta.data)) {
     df$col <- object@meta.data[[color]]
   } else if (color %in% rownames(slot(object@assays[[assay]], slot))) {
@@ -135,7 +138,7 @@ plot_embedding <- function(
     )
   }
   
-  # Create color scale & guide elements
+  # Color scale & guides -------------------------------------------------------
   if (is.null(legend.rows)) {
     legend.rows <- ceiling(length(unique(df$col))/10)
   }
@@ -153,7 +156,34 @@ plot_embedding <- function(
     groups <- TRUE
   }
   
-  # Create group labels
+  # Faceting -------------------------------------------------------------------
+  if (!is.null(split.by)) {
+    if (length(split.by) > 1) {
+      message("More than one category present for split.by, taking the first.")
+      split.by <- split.by[1]
+    } 
+    if (split.by %in% names(object@meta.data)) {
+      n_split <- length(unique(object[[split.by]]))
+      if (n_split > split.by.max) {
+        stop(paste0("More categories for split.by than", split.by.max))
+      }
+      if (is.null(split.by.rows)) {
+        split.by.rows <- round(sqrt(n_split))
+      }
+      df[["wrap"]] <- object@meta.data[, split.by]
+      wrap <- ggplot2::facet_wrap(~wrap, nrow = split.by.rows)
+    } else {
+      message(paste0(
+        "Plot will not be split.by '", split.by, 
+        "' which is not present in meta.data"
+      ))
+      wrap <- NULL
+    }
+  } else {
+    wrap <- NULL
+  }
+  
+  # Create group labels --------------------------------------------------------
   if (groups & label %in% c("text", "label")) {
     ann <- dplyr::summarise(
       dplyr::group_by(df, col), x = median(x), y = median(y)
@@ -172,9 +202,10 @@ plot_embedding <- function(
     groups <- NULL
   }
   
-  # Order cells by color
+  # Order cells ----------------------------------------------------------------
   df <- df[order(df$col), ]
   
+  # Plot -----------------------------------------------------------------------
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
     ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape,
                         stroke = pointstroke) +
@@ -191,7 +222,8 @@ plot_embedding <- function(
       title = ggplot2::element_text(vjust = .5),
       panel.border = ggplot2::element_rect(size = .5, fill=NA)
     ) +
-    xlim + ylim
+    xlim + ylim +
+    wrap
   
   return(plot)
 }
@@ -209,7 +241,7 @@ plot_embedding <- function(
 #'
 plot_markers_embedding <- function(object, markers=NULL,
                                    embedding=tail(names(object@reductions), 1),
-                                   nrow=4, pt.size=1, pt.stroke=1,
+                                   nrow=4, pt.size=1, pt.stroke=1, pt.shape=16,
                                    assay = NULL,
                                    slot = "data",
                                    scale = TRUE,
@@ -281,7 +313,7 @@ plot_markers_embedding <- function(object, markers=NULL,
   
   # Plot
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, col = count)) +
-    ggplot2::geom_point(size = pt.size, stroke = pt.stroke) +
+    ggplot2::geom_point(size = pt.size, stroke = pt.stroke, shape = pt.shape) +
     ggplot2::facet_wrap(~gene, nrow = nrow) +
     color_scale +
     ggplot2::theme_void(20) +
