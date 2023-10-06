@@ -98,3 +98,46 @@ which_rowMax <- function(x) {
   
   return(colnames(x)[v])
 }
+
+#' Summarize rows that have overlapping coordinates
+#' 
+#' @param df Data.frame
+#' @param x Column key
+#' @param y Column key
+#' @param FUN Function to summarize by
+#' @param decimals Integer of decimals to round to
+#' 
+#' @returns Data.frame
+#' 
+summarize_overlapping_rows <- function(df=NULL, x="x", y="y", FUN=mean,
+                                       breaks = 1000) {
+  
+  stopifnot(
+    class(df) == "data.frame",
+    class(df[[x]]) == "numeric",
+    class(df[[y]]) == "numeric"
+  )
+  
+  # Round coordinates
+  for (i in c(x, y)) {
+    df[[i]] <- as.numeric(cut(df[[i]], breaks))
+  }
+  df$match <- paste(df$x, df$y, sep = ":")
+  
+  # Account for split_by column
+  if (is.null(df[["wrap"]])) {
+    df$wrap <- "1"
+  }
+  
+  # Summarize
+  df <- dplyr::summarise(
+    dplyr::group_by(df, match, wrap),
+    x = mean(x), y = mean(y), col = FUN(col)
+  )
+  
+  # Make data.frame
+  df <- as.data.frame(df)
+  
+  # Return
+  return(df)
+}

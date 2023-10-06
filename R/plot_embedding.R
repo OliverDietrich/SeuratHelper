@@ -7,7 +7,7 @@
 #' @param embedding Name of the embedding (e.g. 'umap')
 #' @param color Gene or metadata to color cells
 #' @param label Type of group labels (text or label)
-#' @param pointsize Point size
+#' @param pt.size Point size
 #' @param brush Brushed points (xmin, xmax, ymin, ymax)
 #' @param cells Character of cell barcodes to plot
 #' @param n.cells Number of cells to plot (randomly sampled)
@@ -28,8 +28,10 @@ plot_embedding <- function(
   split.by   = NULL, # TODO
   label      = FALSE,
   embedding  = tail(names(object@reductions), 1),
-  pt.size    = NULL,
-  pt.stroke  = NULL,
+  pt.aggr    = TRUE,
+  pt.aggr.breaks = 300,
+  pt.size    = 1,
+  pt.stroke  = .1,
   dim.1      = 1,
   dim.2      = 2,
   brush      = NULL,
@@ -47,6 +49,7 @@ plot_embedding <- function(
   alpha      = 1,
   shape      = 20,
   color.transform = "",
+  pl.title   = NULL,
   legend.position = "right",
   legend.rows = NULL
 ) {
@@ -63,7 +66,11 @@ plot_embedding <- function(
   }
   
   # Create annotations based on input (some inputs are changed)
-  title <- color
+  if (is.null(pl.title)) {
+    title <- color
+  } else {
+    title <- pl.title
+  }
   
   # Subset data ----------------------------------------------------------------
   if (!is.null(cells)) {
@@ -79,24 +86,7 @@ plot_embedding <- function(
     ylim <- ggplot2::ylim(brush$ymin, brush$ymax)
   }
   
-  # Replace NULL values --------------------------------------------------------
-  if (is.null(pt.size)) {
-    pointsize <- dplyr::case_when(
-      dplyr::between(dim(object)[2],     0,    250) ~ 3,
-      dplyr::between(dim(object)[2],   250,   1000) ~ 2,
-      dplyr::between(dim(object)[2],  1000,   10000) ~ 1,
-      dplyr::between(dim(object)[2],  10000,  50000) ~ 0.1,
-      dim(object)[2] > 50000 ~ 0.001
-    ) # write function to smooth that
-  } else {
-    pointsize <- pt.size
-  }
-  if (is.null(pt.stroke)) {
-    pointstroke <- .25
-  } else {
-    pointstroke <- pt.stroke
-  }
-  # Convert gene names to/from synonyms
+  # Convert gene names to/from synonyms ----------------------------------------
   if (!color %in% rownames(object) & color %in% dict[[to]]) {
     color <- convert_names(color, dict, to, from)
   }
@@ -104,7 +94,7 @@ plot_embedding <- function(
     stop(paste("No assay of name", assay, "present in this Seurat object."))
   }
   
-  # Retrieve two dimensions from the embedding
+  # Retrieve two dimensions from the embedding ---------------------------------
   rng <- c(dim.1, dim.2)
   df <- as.data.frame(object@reductions[[embedding]]@cell.embeddings[, rng])
   names(df) <- c("x", "y")
@@ -142,7 +132,7 @@ plot_embedding <- function(
   if (is.null(legend.rows)) {
     legend.rows <- ceiling(length(unique(df$col))/10)
   }
-  if (class(df$col) %in% c("numeric", "integer")) {
+  if (class(df$col) %in% c("numeric", "integer", "array")) {
     color_guide <- ggplot2::guide_colorbar(
       barwidth = 1, barheight = 15, ticks = FALSE, frame.colour = "black"
     )
@@ -202,13 +192,28 @@ plot_embedding <- function(
     groups <- NULL
   }
   
-  # Order cells ----------------------------------------------------------------
-  df <- df[order(df$col), ]
+  # Order/summarize points -----------------------------------------------------
+  if (pt.aggr) {
+    # Distribute equally and determine color
+    if (all(is.nan(df$col))) {
+      df$col <- 1
+      FUN <- sum
+      title <- "Density (cells/dot)"
+    } else if (class(df$col) %in% c("numeric", "integer", "array")) {
+      FUN <- mean
+    } else {
+      FUN <- max # TODO: select most common label, break ties at random
+    }
+    df <- summarize_overlapping_rows(df, breaks = pt.aggr.breaks, FUN=FUN)
+  } else {
+    # Order by value
+    df <- df[order(df$col), ]
+  }
   
   # Plot -----------------------------------------------------------------------
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
-    ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape,
-                        stroke = pointstroke) +
+    ggplot2::geom_point(size = pt.size, alpha = alpha, shape = shape,
+                        stroke = pt.stroke) +
     groups +
     ggplot2::coord_fixed() +
     ggplot2::labs(col = NULL, title = title) +
@@ -216,7 +221,7 @@ plot_embedding <- function(
       color = color_guide
     ) +
     ann_cols +
-    ggplot2::theme_void(20) +
+    ggplot2::theme_void(theme.size) +
     ggplot2::theme(
       legend.position = legend.position,
       title = ggplot2::element_text(vjust = .5),
