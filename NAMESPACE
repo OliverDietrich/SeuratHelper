@@ -2,6 +2,7 @@
 
 export(AddAUC)
 export(add_qc_metrics)
+export(annotate_maxAUC)
 export(combinations)
 export(convert_names)
 export(heatmap_expression)

@@ -10,10 +10,14 @@ plot_markers_embedding(
   embedding = tail(names(object@reductions), 1),
   nrow = 4,
   pt.size = 1,
+  pt.stroke = 1,
+  pt.shape = 16,
   assay = NULL,
   slot = "data",
   scale = TRUE,
-  pl.title = NULL
+  markers.max = 100,
+  pl.title = NULL,
+  col.title = NULL
 )
 }
 \arguments{

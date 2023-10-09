@@ -7,7 +7,7 @@
 #' @param embedding Name of the embedding (e.g. 'umap')
 #' @param color Gene or metadata to color cells
 #' @param label Type of group labels (text or label)
-#' @param pointsize Point size
+#' @param pt.size Point size
 #' @param brush Brushed points (xmin, xmax, ymin, ymax)
 #' @param cells Character of cell barcodes to plot
 #' @param n.cells Number of cells to plot (randomly sampled)
@@ -25,28 +25,35 @@
 plot_embedding <- function(
   object     = NULL,
   color      = "",
+  split.by   = NULL, # TODO
   label      = FALSE,
-  label.size = 6,
   embedding  = tail(names(object@reductions), 1),
-  pt.size    = NULL,
+  pt.aggr    = TRUE,
+  pt.aggr.breaks = 300,
+  pt.size    = 1,
+  pt.stroke  = .1,
   dim.1      = 1,
   dim.2      = 2,
   brush      = NULL,
   cells      = NULL,
   n.cells    = NULL,
-  assay      = "RNA",
+  assay      = Seurat::DefaultAssay(object),
   slot       = "data",
+  theme.size = 15, # TODO
+  label.size = 6,
+  split.by.rows = NULL,
+  split.by.max = 20,
   dict       = object@misc$features,
   from       = 1,
   to         = 2,
   alpha      = 1,
   shape      = 20,
   color.transform = "",
+  pl.title   = NULL,
   legend.position = "right",
-  legend.rows = NULL
+  legend.cols = NULL
 ) {
   
-  # Specify conditions that are required for the function to work
   stopifnot(
     class(object) == "Seurat",
     length(color) == 1,
@@ -59,9 +66,13 @@ plot_embedding <- function(
   }
   
   # Create annotations based on input (some inputs are changed)
-  title <- color
+  if (is.null(pl.title)) {
+    title <- color
+  } else {
+    title <- pl.title
+  }
   
-  # Subset data based on cells
+  # Subset data ----------------------------------------------------------------
   if (!is.null(cells)) {
     object <- subset(object, cells = cells)
   } else if (!is.null(n.cells)) {
@@ -75,19 +86,7 @@ plot_embedding <- function(
     ylim <- ggplot2::ylim(brush$ymin, brush$ymax)
   }
   
-  # Compute values for input arguments that are NULL
-  if (is.null(pt.size)) {
-    pointsize <- dplyr::case_when(
-      dplyr::between(dim(object)[2],     0,    250) ~ 3,
-      dplyr::between(dim(object)[2],   250,   1000) ~ 2,
-      dplyr::between(dim(object)[2],  1000,   10000) ~ 1,
-      dplyr::between(dim(object)[2],  10000,  50000) ~ 0.1,
-      dim(object)[2] > 50000 ~ 0.001
-    ) # write function to smooth that
-  } else {
-    pointsize <- pt.size
-  }
-  # Convert gene names to/from synonyms
+  # Convert gene names to/from synonyms ----------------------------------------
   if (!color %in% rownames(object) & color %in% dict[[to]]) {
     color <- convert_names(color, dict, to, from)
   }
@@ -95,15 +94,23 @@ plot_embedding <- function(
     stop(paste("No assay of name", assay, "present in this Seurat object."))
   }
   
-  # Retrieve two dimensions from the embedding
+  # Retrieve two dimensions from the embedding ---------------------------------
   rng <- c(dim.1, dim.2)
   df <- as.data.frame(object@reductions[[embedding]]@cell.embeddings[, rng])
   names(df) <- c("x", "y")
   
-  # Retrieve expression/metadata for color
+  # Color ----------------------------------------------------------------------
   if (color %in% names(object@meta.data)) {
     df$col <- object@meta.data[[color]]
-  } else if (color %in% rownames(object)) {
+  } else if (color %in% rownames(slot(object@assays[[assay]], slot))) {
+    df$col <- slot(object@assays[[assay]], slot)[color, ]
+  } else if (color %in% unlist(lapply(object@assays, rownames))) {
+    assay <- stringr::str_remove_all(
+      names(which(unlist(lapply(object@assays, rownames)) == color)), 
+      "\\d"
+      )
+    message(paste("Expression/metadata found in different assay.",
+                   "Switching to", assay))
     df$col <- slot(object@assays[[assay]], slot)[color, ]
   } else {
     warning(paste0("Expression/metadata for '", color, "' not found."))
@@ -121,11 +128,11 @@ plot_embedding <- function(
     )
   }
   
-  # Create color scale & guide elements
-  if (is.null(legend.rows)) {
-    legend.rows <- ceiling(length(unique(df$col))/10)
+  # Color scale & guides -------------------------------------------------------
+  if (is.null(legend.cols)) {
+    legend.cols <- ceiling(length(unique(df$col))/10)
   }
-  if (class(df$col) %in% c("numeric", "integer")) {
+  if (class(df$col) %in% c("numeric", "integer", "array")) {
     color_guide <- ggplot2::guide_colorbar(
       barwidth = 1, barheight = 15, ticks = FALSE, frame.colour = "black"
     )
@@ -133,13 +140,58 @@ plot_embedding <- function(
     groups <- FALSE
   } else {
     color_guide <- ggplot2::guide_legend(
-      override.aes = list(size = 8), ncol = legend.rows
+      override.aes = list(size = 8), ncol = legend.cols
     )
     ann_cols <- NULL
     groups <- TRUE
   }
   
-  # Create group labels
+  # Faceting -------------------------------------------------------------------
+  if (!is.null(split.by)) {
+    if (length(split.by) > 1) {
+      message("More than one category present for split.by, taking the first.")
+      split.by <- split.by[1]
+    } 
+    if (split.by %in% names(object@meta.data)) {
+      n_split <- length(unique(object[[split.by]]))
+      if (n_split > split.by.max) {
+        stop(paste0("More categories for split.by than", split.by.max))
+      }
+      if (is.null(split.by.rows)) {
+        split.by.rows <- round(sqrt(n_split))
+      }
+      df[["wrap"]] <- object@meta.data[, split.by]
+      wrap <- ggplot2::facet_wrap(~wrap, nrow = split.by.rows)
+    } else {
+      message(paste0(
+        "Plot will not be split.by '", split.by, 
+        "' which is not present in meta.data"
+      ))
+      wrap <- NULL
+    }
+  } else {
+    wrap <- NULL
+  }
+  
+  # Order/summarize points -----------------------------------------------------
+  if (pt.aggr) {
+    # Distribute equally and determine color
+    if (all(is.nan(df$col))) {
+      df$col <- 1
+      FUN <- sum
+      title <- "Density (cells/dot)"
+    } else if (class(df$col) %in% c("numeric", "integer", "array")) {
+      FUN <- mean
+    } else {
+      FUN <- select_most_frequent_category
+    }
+    df <- summarize_overlapping_rows(df, breaks = pt.aggr.breaks, FUN=FUN)
+  } else {
+    # Order by value
+    df <- df[order(df$col), ]
+  }
+  
+  # Create group labels --------------------------------------------------------
   if (groups & label %in% c("text", "label")) {
     ann <- dplyr::summarise(
       dplyr::group_by(df, col), x = median(x), y = median(y)
@@ -148,21 +200,20 @@ plot_embedding <- function(
     if (label == "text") {
       groups <- ggplot2::geom_text(
         ggplot2::aes(label = col, col = NULL), ann, size = label.size
-        )
+      )
     } else {
       groups <- ggplot2::geom_label(
         ggplot2::aes(label = col), ann, size = label.size
-        )
+      )
     }
   } else {
     groups <- NULL
   }
   
-  # Order cells by color
-  df <- df[order(df$col), ]
-  
+  # Plot -----------------------------------------------------------------------
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, color = col)) +
-    ggplot2::geom_point(size = pointsize, alpha = alpha, shape = shape) +
+    ggplot2::geom_point(size = pt.size, alpha = alpha, shape = shape,
+                        stroke = pt.stroke) +
     groups +
     ggplot2::coord_fixed() +
     ggplot2::labs(col = NULL, title = title) +
@@ -170,13 +221,14 @@ plot_embedding <- function(
       color = color_guide
     ) +
     ann_cols +
-    ggplot2::theme_void(20) +
+    ggplot2::theme_void(theme.size) +
     ggplot2::theme(
       legend.position = legend.position,
       title = ggplot2::element_text(vjust = .5),
       panel.border = ggplot2::element_rect(size = .5, fill=NA)
     ) +
-    xlim + ylim
+    xlim + ylim +
+    wrap
   
   return(plot)
 }
@@ -194,15 +246,21 @@ plot_embedding <- function(
 #'
 plot_markers_embedding <- function(object, markers=NULL,
                                    embedding=tail(names(object@reductions), 1),
-                                   nrow=4, pt.size=1,
+                                   pt.aggr    = TRUE,
+                                   pt.aggr.breaks = 300,
+                                   pt.size    = .5,
+                                   pt.stroke  = .1,
+                                   pt.shape=16,
+                                   nrow=floor(sqrt(length(markers))),
                                    assay = NULL,
                                    slot = "data",
                                    scale = TRUE,
-                                   pl.title = NULL
+                                   markers.max = 100,
+                                   pl.title = NULL,
+                                   col.title = NULL
                                    ) {
   
   stopifnot(
-    !is.null(markers),
     class(object) == "Seurat"
   )
   
@@ -210,7 +268,15 @@ plot_markers_embedding <- function(object, markers=NULL,
     assay <- Seurat::DefaultAssay(object)
   }
   
-  # Fetch data
+  if (is.null(markers)) {
+    warning("No markers specified. Defaulting to whole assay.")
+    markers <-rownames(object@assays[[assay]])
+    if (length(markers) > markers.max) {
+      stop(paste("To many features in assay:", assay))
+    }
+  }
+  
+  # Fetch data -----------------------------------------------------------------
   df <- data.frame(
     x = object@reductions[[embedding]]@cell.embeddings[, 1],
     y = object@reductions[[embedding]]@cell.embeddings[, 2]
@@ -221,38 +287,45 @@ plot_markers_embedding <- function(object, markers=NULL,
     }
   }
   
-  # Re-shape
+  # Re-shape -------------------------------------------------------------------
   df <- tidyr::gather(df, "gene", "count", -x, -y)
   df$gene <- factor(df$gene, unique(df$gene))
   
-  # Scale
+  # Order/summarize points -----------------------------------------------------
+  if (pt.aggr) {
+    df$x <- round(df$x, 2)
+    df$y <- round(df$y, 2)
+    df <- dplyr::summarise(dplyr::group_by(df, gene, x, y), count = mean(count))
+  }
+  
+  # Scale ----------------------------------------------------------------------
   if (scale) {
     df <- dplyr::group_by(df, gene)
     df <- dplyr::mutate(df, count = scale(count)[,1])
     color_scale <- ggplot2::scale_color_distiller(palette = "RdBu")
-    plot_title <- "Normalized gene expression"
-  } else {
     plot_title <- "Normalized and scaled gene expression"
+    col_title <- "z-score"
+  } else {
+    plot_title <- "Normalized gene expression"
+    col_title <- "logcount"
     color_scale <- viridis::scale_color_viridis(option = "A", direction = -1)
   }
   
   if (!is.null(pl.title)) {
     plot_title <- pl.title
   }
+  if (!is.null(col.title)) {
+    col_title <- col.title
+  }
   
-  # Define range of scale
+  # Define range of scale ------------------------------------------------------
   rng <- c(-2, 2)
   df$count[df$count < min(rng)] <- min(rng)
   df$count[df$count > max(rng)] <- max(rng)
   
-  # Round points and average overlap
-  df$x <- round(df$x, 2)
-  df$y <- round(df$y, 2)
-  df <- dplyr::summarise(dplyr::group_by(df, gene, x, y), count = mean(count))
-  
   # Plot
   plot <- ggplot2::ggplot(df, ggplot2::aes(x, y, col = count)) +
-    ggplot2::geom_point(size = pt.size) +
+    ggplot2::geom_point(size = pt.size, stroke = pt.stroke, shape = pt.shape) +
     ggplot2::facet_wrap(~gene, nrow = nrow) +
     color_scale +
     ggplot2::theme_void(20) +
@@ -267,7 +340,17 @@ plot_markers_embedding <- function(object, markers=NULL,
     ) +
     ggplot2::labs(title = plot_title,
                   subtitle = paste("Embedding:", embedding), 
-                  col = "z-score")
+                  col = col_title)
   
   return(plot)
+}
+
+#' Select maximum occuring category in vector
+#' 
+#' @param v Vector
+#' 
+#' @export
+select_most_frequent_category <- function(v) {
+  index <- table(v)
+  sample(names(index[index == max(index)]), 1)
 }
