@@ -51,7 +51,7 @@ plot_embedding <- function(
   color.transform = "",
   pl.title   = NULL,
   legend.position = "right",
-  legend.rows = NULL
+  legend.cols = NULL
 ) {
   
   stopifnot(
@@ -129,8 +129,8 @@ plot_embedding <- function(
   }
   
   # Color scale & guides -------------------------------------------------------
-  if (is.null(legend.rows)) {
-    legend.rows <- ceiling(length(unique(df$col))/10)
+  if (is.null(legend.cols)) {
+    legend.cols <- ceiling(length(unique(df$col))/10)
   }
   if (class(df$col) %in% c("numeric", "integer", "array")) {
     color_guide <- ggplot2::guide_colorbar(
@@ -140,7 +140,7 @@ plot_embedding <- function(
     groups <- FALSE
   } else {
     color_guide <- ggplot2::guide_legend(
-      override.aes = list(size = 8), ncol = legend.rows
+      override.aes = list(size = 8), ncol = legend.cols
     )
     ann_cols <- NULL
     groups <- TRUE
@@ -173,25 +173,6 @@ plot_embedding <- function(
     wrap <- NULL
   }
   
-  # Create group labels --------------------------------------------------------
-  if (groups & label %in% c("text", "label")) {
-    ann <- dplyr::summarise(
-      dplyr::group_by(df, col), x = median(x), y = median(y)
-    )
-    legend.position <- ""
-    if (label == "text") {
-      groups <- ggplot2::geom_text(
-        ggplot2::aes(label = col, col = NULL), ann, size = label.size
-        )
-    } else {
-      groups <- ggplot2::geom_label(
-        ggplot2::aes(label = col), ann, size = label.size
-        )
-    }
-  } else {
-    groups <- NULL
-  }
-  
   # Order/summarize points -----------------------------------------------------
   if (pt.aggr) {
     # Distribute equally and determine color
@@ -208,6 +189,25 @@ plot_embedding <- function(
   } else {
     # Order by value
     df <- df[order(df$col), ]
+  }
+  
+  # Create group labels --------------------------------------------------------
+  if (groups & label %in% c("text", "label")) {
+    ann <- dplyr::summarise(
+      dplyr::group_by(df, col), x = median(x), y = median(y)
+    )
+    legend.position <- ""
+    if (label == "text") {
+      groups <- ggplot2::geom_text(
+        ggplot2::aes(label = col, col = NULL), ann, size = label.size
+      )
+    } else {
+      groups <- ggplot2::geom_label(
+        ggplot2::aes(label = col), ann, size = label.size
+      )
+    }
+  } else {
+    groups <- NULL
   }
   
   # Plot -----------------------------------------------------------------------
