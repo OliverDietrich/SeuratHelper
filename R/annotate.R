@@ -17,22 +17,25 @@ annotate_maxAUC <- function(object=NULL, assay = NULL, group.by = NULL,
   )
   
   if (is.null(group.by)) {
-    group.by <- Seurat::Idents(object)
+    group.by <- as.character(Seurat::Idents(object))
   } else {
-    group.by <- object@meta.data[[group.by]]
+    group.by <- as.character(object@meta.data[[group.by]])
   }
+  
+  # Convert into factor
+  group.by <- factor(group.by)
   
   # Create labels
   mat <- summarize_groups(slot(object@assays[[assay]], slot), group.by)
   label <- which_rowMax(t(mat))
-  names(label) <- levels(object[[group.by]])
-  object$cell_type <- factor(label[as.character(object[[group.by]])])
+  names(label) <- levels(group.by)
+  object$cell_type <- factor(label[as.character(group.by)
   
   # Calculate certainty
   mat <- apply(mat, 2, sort, decreasing = TRUE)
   cert <- mat[1,] - mat[2,]
-  names(cert) <- levels(object[[group.by]])
-  object$cell_type_certainty <- cert[as.character(object[[group.by]])]
+  names(cert) <- levels(group.by)
+  object$cell_type_certainty <- cert[as.character(group.by)]
   
   return(object)
 }
