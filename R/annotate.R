@@ -29,13 +29,13 @@ annotate_maxAUC <- function(object=NULL, assay = NULL, group.by = NULL,
   mat <- summarize_groups(slot(object@assays[[assay]], slot), group.by)
   label <- which_rowMax(t(mat))
   names(label) <- levels(group.by)
-  object$cell_type <- factor(label[as.character(group.by)])
+  object@meta.data[["cell_type"]] <- factor(label[as.character(group.by)])
   
   # Calculate certainty
   mat <- apply(mat, 2, sort, decreasing = TRUE)
   cert <- mat[1,] - mat[2,]
   names(cert) <- levels(group.by)
-  object$cell_type_certainty <- cert[as.character(group.by)]
+  object@meta.data[["cell_type_certainty"]] <- cert[as.character(group.by)]
   
   return(object)
 }
