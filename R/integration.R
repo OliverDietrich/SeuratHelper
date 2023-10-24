@@ -30,7 +30,7 @@ RunMNN <- function(object=NULL,
   )
   
   # Recalculate integration ----------------------------------------------------
-  if (!is.null(object[[name]])) {
+  if (name %in% names(object@reductions)) {
     if (force.recalc) {
       warning(paste("Embedding", name, "exists. But will be re-computed."))
     } else {
