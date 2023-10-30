@@ -60,9 +60,7 @@ unique_combinations <- function(x, sep = "-") {
   
   stopifnot(class(x) %in% c("data.frame", "list"))
   
-  #if (class(x) == "data.frame") {
-  #  x <- lapply(x, levels)
-  #}
+  x <- lapply(x, factor)
   x <- lapply(x, levels)
   
   m <- matrix(
