@@ -12,8 +12,14 @@ summarize_groups <- function (
   
   stopifnot(
     any(class(x) %in% c("matrix", "dgCMatrix", "dgTMatrix")),
-    is.factor(groups) & length(groups) == ncol(x)
+    length(groups) == ncol(x)
   )
+  
+  if (class(groups) != "factor") {
+    warning(paste("Groups are of type", class(groups), 
+                  "and will be converted to factor."))
+    groups <- factor(groups)
+  }
   
   rn <- rownames(x)
   index <- split(1:length(groups), groups)
