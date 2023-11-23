@@ -8,10 +8,12 @@ plot_markers_embedding(
   object,
   markers = NULL,
   embedding = tail(names(object@reductions), 1),
-  nrow = 4,
-  pt.size = 1,
-  pt.stroke = 1,
+  pt.aggr = TRUE,
+  pt.aggr.breaks = 300,
+  pt.size = 0.5,
+  pt.stroke = 0.1,
   pt.shape = 16,
+  nrow = floor(sqrt(length(markers))),
   assay = NULL,
   slot = "data",
   scale = TRUE,
@@ -27,9 +29,9 @@ plot_markers_embedding(
 
 \item{embedding}{Embedding name (slot in reductions)}
 
-\item{nrow}{Number of rows}
-
 \item{pt.size}{Point size}
+
+\item{nrow}{Number of rows}
 }
 \value{
 plot
