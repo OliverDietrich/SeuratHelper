@@ -132,14 +132,17 @@ heatmap_expression <- function(
   }
   
   if (is.null(rowdata)) {
+    # No rowdata specified
     rann <- NA
     gaps_row <- NULL
   } else if (class(rowdata) %in% c("character", "factor") &
              length(rowdata)==length(features)) {
+    # One vector of labels
     rann <- data.frame(
-      row.names = features[index],
+      row.names = make.unique(features[index], sep = "-"),
       label = rowdata[index]
     )
+    rann$label <- factor(rann$label, unique(rann$label))
     names(rann) <- rowdata_label
     gaps_row <- head(as.numeric(cumsum(table(rann[,1]))), -1)
   } else {# TODO: add other possibilities (e.g. multiple annotations) #####
@@ -223,12 +226,6 @@ heatmap_expression <- function(
     heatmap_colors <- rev(heatmap_colors)
   }
   color_scale <- colorRampPalette(heatmap_colors)(length(breaks))
-  
-  # Determine order ------------------------------------------------------------
-  
-  #ind <- order(cann, decreasing = FALSE)
-  #cann <- cann[ind, ]
-  #mat <- mat[, ind]
   
   # Plot -----------------------------------------------------------------------
   plot <- pheatmap::pheatmap(
