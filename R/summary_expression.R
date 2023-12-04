@@ -55,6 +55,7 @@ AddAUC <- function(
 #' @param rowdata Annotation for rows
 #' @param rowdata_label Name of the row annotation
 #' @param collapse_replicates Whether to average over groups of cells
+#' @param heatmap_colors Name of color scale to use (default: "RdBu")
 #' @param title Plot title
 #' @param limits Limits of the color scale
 #' 
@@ -67,7 +68,11 @@ heatmap_expression <- function(
     rowdata = NULL,
     rowdata_label = "group",
     collapse_replicates = TRUE,
-    colors = NULL,
+    coldata_group_max = 250,
+    cells = colnames(object),
+    heatmap_colors = "RdBu",
+    heatmap_color_dir = -1,
+    annotation_colors = NULL,
     scale = TRUE,
     assay = NULL,
     slot = "data",
@@ -87,6 +92,10 @@ heatmap_expression <- function(
     assay <- Seurat::DefaultAssay(object)
   }
   
+  # Subset by cells ------------------------------------------------------------
+  object <- subset(object, cells = cells)
+  
+  # Column annotations ---------------------------------------------------------
   if (is.null(coldata)) {
     message("Coldata not specified. Defaulting to Idents")
     coldata <- Seurat::Idents(object)
@@ -95,29 +104,31 @@ heatmap_expression <- function(
       Idents = coldata
     )
   } else if (all(coldata %in% names(object@meta.data))) {
-    if (length(coldata) == 1) {
+    if (length(coldata) == 1) { 
+      # Select single column
       cann <- data.frame(
         row.names = colnames(object),
         label = object[[coldata]]
       )
       names(cann) <- coldata
-      coldata <- combinations(cann)
-    } else {
+    } else { 
+      # Select multiple columns
       cann <- object@meta.data[, coldata]
-      coldata <- combinations(cann)
     }
   } else {
     stop("Coldata has not been specified correctly. Exiting.")
   }
   
+  # Row data & annotations -----------------------------------------------------
+  
   index <- which(features %in% rownames(slot(object[[assay]], slot)))
   if (length(index) < length(features)) {
     leftout <- features[!features %in% features[index]]
     warning(paste("The following features were not found in the assay:",
-                  leftout, ". Will be removed..."))
+                  paste(leftout, collapse = ", "), ". Will be removed..."))
   }
   if (length(index) == 0) {
-   stop("No matching features specified.") 
+    stop("No matching features specified.") 
   }
   
   if (is.null(rowdata)) {
@@ -131,7 +142,7 @@ heatmap_expression <- function(
     )
     names(rann) <- rowdata_label
     gaps_row <- head(as.numeric(cumsum(table(rann[,1]))), -1)
-  } else {
+  } else {# TODO: add other possibilities (e.g. multiple annotations) #####
     warning(
     "Row annotations do not fit the supplied features and will be ignored..."
     )
@@ -139,31 +150,87 @@ heatmap_expression <- function(
     gaps_row <- NULL
   }
   
+  # Summarize count data -------------------------------------------------------
+  
+  # Create groups
+  ind <- unlist(lapply(lapply(cann, unique), length))
+  cat_in <- coldata[ind <= coldata_group_max]
+  cat_out <- coldata[ind > coldata_group_max]
+  lvls <- row.names(unique_combinations(cann[, cat_in]))
+  groups <- combinations(cann[, cat_in])
+  lvls <- lvls[lvls %in% groups]
+  groups <- factor(groups, lvls)
+  
+  
+  # Summarize across replicates (e.g. cells)
   if (collapse_replicates) {
     mat <- summarize_groups(slot(object[[assay]], slot)[features[index], ], 
-                            coldata
+                            groups
     )
-    cann <- unique_combinations(cann)
-    ind <- rownames(cann) %in% colnames(mat)
-    cann <- subset(cann, ind)
+    smry <- unique_combinations(cann[, cat_in])
+    cann$cells <- 1
+    temp <- data.frame(group = groups, cells = 1)
+    for (i in cat_out) {
+      temp$num <- cann[[i]]
+      x <- dplyr::summarise(dplyr::group_by(temp, group), num=mean(num))
+      smry[[i]] <- x$num[match(rownames(smry), x$group)]
+    }
+    x <- dplyr::summarise(dplyr::group_by(temp, group), cells=sum(cells))
+    smry[["cells"]] <- x$cells[match(rownames(smry), x$group)]
+    ind <- rownames(smry) %in% colnames(mat)
+    smry <- subset(smry, ind)
+    cann <- smry
   } else {
     mat <- as.matrix(
-      slot(object[[assay]], slot)[features[index], order(coldata)]
+      slot(object[[assay]], slot)[features[index], order(groups)]
     )
   }
   
+  # Color encoding -------------------------------------------------------------
+  
+  # Scaling
   if (scale) {
     mat <- t(scale(t(mat)))
   }
   
-  if (is.null(colors)) {
+  # Annotation colors
+  if (is.null(annotation_colors)) {
     ann_colors <- NA
   } else if (class(colors) == "list") {
     # TODO: create input for colors
+    ann_colors <- NA
   }
   
+  # Breaks
   breaks <- seq(from = min(limits), to = max(limits), length.out = 100)
   
+  # Color scale
+  rcbrew <- RColorBrewer::brewer.pal.info
+  if (class(heatmap_colors) != "character") {
+    stop("Heatmap colors must be specified as a character vector.")
+  } 
+  if (length(heatmap_colors) > 1) {
+    warning("Multiple heatmap colors specified. 
+            Trying to generate colorRampPalette.")
+  } else if (length(heatmap_colors) < 1) {
+    warning("No heatmap colors have been specified. Reverting to default.")
+    heatmap_colors <- "RdBu"
+  } else if (heatmap_colors %in% rownames(rcbrew)) {
+    print("Selecting color values from RColorBrewer...")
+    heatmap_colors <- RColorBrewer::brewer.pal(n = 9, name = heatmap_colors)
+  }
+  if (heatmap_color_dir == -1) {
+    heatmap_colors <- rev(heatmap_colors)
+  }
+  color_scale <- colorRampPalette(heatmap_colors)(length(breaks))
+  
+  # Determine order ------------------------------------------------------------
+  
+  #ind <- order(cann, decreasing = FALSE)
+  #cann <- cann[ind, ]
+  #mat <- mat[, ind]
+  
+  # Plot -----------------------------------------------------------------------
   plot <- pheatmap::pheatmap(
     mat,
     cluster_cols = FALSE,                              
@@ -174,8 +241,7 @@ heatmap_expression <- function(
     annotation_colors = ann_colors,
     show_colnames = show_colnames, 
     show_rownames = show_rownames,
-    color  = colorRampPalette(
-      rev(RColorBrewer::brewer.pal(n = 9, name = "RdBu")))(length(breaks)), 
+    color  = color_scale, 
     gaps_col = head(as.numeric(cumsum(table(cann[,1]))), -1),
     gaps_row = gaps_row,
     main = title,
