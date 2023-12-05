@@ -10,7 +10,7 @@ AddAUC(
   name = NULL,
   assay = NULL,
   slot = "data",
-  force = FALSE
+  force.recalc = FALSE
 )
 }
 \arguments{
@@ -22,6 +22,10 @@ each entry should be a vector of feature names}
 \item{name}{Name of the feature set (e.g. celltype) used as assay name}
 
 \item{assay}{Name of assay to use}
+
+\item{slot}{Name of slot to use}
+
+\item{force.recalc}{Wheter to force recalculation}
 }
 \value{
 SeuratObject with AUC added as 'assay'

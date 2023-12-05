@@ -8,7 +8,8 @@
 #' each entry should be a vector of feature names
 #' @param name Name of the feature set (e.g. celltype) used as assay name
 #' @param assay Name of assay to use
-#' @param slot
+#' @param slot Name of slot to use
+#' @param force.recalc Wheter to force recalculation
 #' @returns SeuratObject with AUC added as 'assay'
 #'
 #' @export
@@ -19,7 +20,7 @@ AddAUC <- function(
     name=NULL,
     assay = NULL,
     slot = "data",
-    force = FALSE
+    force.recalc = FALSE
     ) {
   
   stopifnot(
@@ -32,8 +33,9 @@ AddAUC <- function(
     assay <- Seurat::DefaultAssay(object)
   }
   
-  if (name %in% names(object@assays) & force == FALSE) {
-    stop(paste("Assay", name, " already exists. To replace set force = TRUE"))
+  if (name %in% names(object@assays) & force.recalc == FALSE) {
+    stop(paste("Assay", name, " already exists. 
+               To replace set force.recalc = TRUE"))
   }
  
   ranks <- AUCell::AUCell_buildRankings(
@@ -55,12 +57,21 @@ AddAUC <- function(
 #' @param rowdata Annotation for rows
 #' @param rowdata_label Name of the row annotation
 #' @param collapse_replicates Whether to average over groups of cells
+#' @param coldata_group_max Maxiumum number of categories for each 
+#' column annotation
+#' @param cells Cells to plot
 #' @param heatmap_colors Name of color scale to use (default: "RdBu")
-#' @param title Plot title
+#' @param heatmap_color_dir Direction of heatmap color scale
+#' @param annotation_colors List of color assignments for annotations
+#' @param scale Whether to scale expression data
+#' @param assay Which assay to take expression data from
+#' @param slot Which slot of the assay to use ("data", "counts")
 #' @param limits Limits of the color scale
-#' 
+#' @param title Plot title
+#' @param show_rownames Whether to show rownames
+#' @param show_colnames Whether to show colnames
+#' @param ... Other parameters passed to pheatmap
 #' @export
-#' 
 heatmap_expression <- function(
     object = NULL,
     features = NULL,
