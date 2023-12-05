@@ -151,11 +151,12 @@ heatmap_expression <- function(
     # One vector of labels
     rann <- data.frame(
       row.names = make.unique(features[index], sep = "-"),
-      label = rowdata[index]
+      label = factor(rowdata[index], unique(rowdata[index]))
     )
-    rann$label <- factor(rann$label, unique(rann$label))
     names(rann) <- rowdata_label
-    gaps_row <- head(as.numeric(cumsum(table(rann[,1]))), -1)
+    rann$duplicated <- as.character(duplicated(features[index]))
+    # gaps_row <- head(as.numeric(cumsum(table(rann[[rowdata_label]]))), -1)
+    gaps_row <- NULL
   } else {# TODO: add other possibilities (e.g. multiple annotations) #####
     warning(
     "Row annotations do not fit the supplied features and will be ignored..."
@@ -190,7 +191,7 @@ heatmap_expression <- function(
       smry[[i]] <- x$num[match(rownames(smry), x$group)]
     }
     x <- dplyr::summarise(dplyr::group_by(temp, group), cells=sum(cells))
-    smry[["cells"]] <- x$cells[match(rownames(smry), x$group)]
+    smry[["log10_cells"]] <- log10(x$cells[match(rownames(smry), x$group)])
     ind <- rownames(smry) %in% colnames(mat)
     smry <- subset(smry, ind)
     cann <- smry
