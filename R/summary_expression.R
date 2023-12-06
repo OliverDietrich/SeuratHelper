@@ -56,6 +56,8 @@ AddAUC <- function(
 #' @param coldata Annotation for columns
 #' @param rowdata Annotation for rows
 #' @param rowdata_label Name of the row annotation
+#' @param order_rows Whether to order rows by group
+#' @param remove_duplicates Whether to remove duplicated rows
 #' @param collapse_replicates Whether to average over groups of cells
 #' @param coldata_group_max Maxiumum number of categories for each 
 #' column annotation
@@ -70,6 +72,7 @@ AddAUC <- function(
 #' @param title Plot title
 #' @param show_rownames Whether to show rownames
 #' @param show_colnames Whether to show colnames
+#' @param gaps_row Numeric vector specifying row gaps
 #' @param ... Other parameters passed to pheatmap
 #' @export
 heatmap_expression <- function(
@@ -78,8 +81,10 @@ heatmap_expression <- function(
     coldata = NULL,
     rowdata = NULL,
     rowdata_label = "group",
+    order_rows = FALSE,
+    remove_duplicates = FALSE,
     collapse_replicates = TRUE,
-    coldata_group_max = 250,
+    coldata_group_max = 100,
     cells = colnames(object),
     heatmap_colors = "RdBu",
     heatmap_color_dir = -1,
@@ -91,12 +96,18 @@ heatmap_expression <- function(
     title = "Differentially expressed genes",
     show_rownames = FALSE,
     show_colnames = FALSE,
+    gaps_row = NULL,
     ...
   ) {
   
   stopifnot(
     !is.null(object),
-    class(features) == "character"
+    class(features) == "character",
+    cells %in% colnames(object),
+    is.logical(order_rows),
+    is.logical(remove_duplicates),
+    is.logical(collapse_replicates),
+    is.logical(scale)
   )
   
   if (is.null(assay)) {
@@ -109,22 +120,20 @@ heatmap_expression <- function(
   # Column annotations ---------------------------------------------------------
   if (is.null(coldata)) {
     message("Coldata not specified. Defaulting to Idents")
-    coldata <- Seurat::Idents(object)
+    coldata <- factor(Seurat::Idents(object))
     cann <- data.frame(
       row.names = colnames(object),
       Idents = coldata
     )
   } else if (all(coldata %in% names(object@meta.data))) {
-    if (length(coldata) == 1) { 
-      # Select single column
-      cann <- data.frame(
-        row.names = colnames(object),
-        label = object[[coldata]]
-      )
-      names(cann) <- coldata
-    } else { 
-      # Select multiple columns
-      cann <- object@meta.data[, coldata]
+    cann <- data.frame(row.names = colnames(object))
+    for (i in coldata) {
+      x <- object@meta.data[[i]]
+      if (length(unique(x)) <= coldata_group_max) {
+        cann[[i]] <- factor(x)
+      } else {
+        cann[[i]] <- x
+      }
     }
   } else {
     stop("Coldata has not been specified correctly. Exiting.")
@@ -132,57 +141,71 @@ heatmap_expression <- function(
   
   # Row data & annotations -----------------------------------------------------
   
+  # Detect features in assay
   index <- which(features %in% rownames(slot(object[[assay]], slot)))
   if (length(index) < length(features)) {
     leftout <- features[!features %in% features[index]]
     warning(paste("The following features were not found in the assay:",
                   paste(leftout, collapse = ", "), ". Will be removed..."))
-  }
-  if (length(index) == 0) {
+  } else if (length(index) == 0) {
     stop("No matching features specified.") 
   }
   
   if (is.null(rowdata)) {
     # No rowdata specified
     rann <- NA
-    gaps_row <- NULL
   } else if (class(rowdata) %in% c("character", "factor") &
              length(rowdata)==length(features)) {
     # One vector of labels
-    rann <- data.frame(
-      row.names = make.unique(features[index], sep = "-"),
-      label = factor(rowdata[index], unique(rowdata[index]))
-    )
-    names(rann) <- rowdata_label
-    rann$duplicated <- as.character(duplicated(features[index]))
-    # gaps_row <- head(as.numeric(cumsum(table(rann[[rowdata_label]]))), -1)
-    gaps_row <- NULL
-  } else {# TODO: add other possibilities (e.g. multiple annotations) #####
+    features <- features[index]
+    rowdata <- rowdata[index]
+    # Vector levels
+    if (class(rowdata) == "character") {
+      rowdata <- factor(rowdata, unique(rowdata))
+    } else {
+      rowdata <- factor(rowdata)
+    }
+    # Create annotation data.frame
+    if (remove_duplicates) {
+      ind <- which(!duplicated(features))
+      features <- features[ind]
+      rann <- data.frame(row.names = features, label = rowdata[ind])
+      names(rann) <- rowdata_label
+    } else {
+      rann <- data.frame(row.names = make.unique(features, sep = "-"), 
+                         label = rowdata)
+      names(rann) <- rowdata_label
+      rann$duplicated <- factor(duplicated(features))
+    }
+  } else if (class(rowdata) == "data.frame" & 
+             nrow(rowdata) == length(features)) {
+    # Data frame with multiple annotations
+    stop("Data.frame for row annotations is not supported yet!")
+  } else {
     warning(
     "Row annotations do not fit the supplied features and will be ignored..."
     )
     rann <- NA
-    gaps_row <- NULL
   }
   
   # Summarize count data -------------------------------------------------------
   
   # Create groups
   ind <- unlist(lapply(lapply(cann, unique), length))
-  cat_in <- coldata[ind <= coldata_group_max]
-  cat_out <- coldata[ind > coldata_group_max]
-  lvls <- row.names(unique_combinations(cann[, cat_in]))
-  groups <- combinations(cann[, cat_in])
+  cat_in <- names(cann)[ind <= coldata_group_max]
+  cat_out <- names(cann)[ind > coldata_group_max]
+  lvls <- row.names(unique_combinations(subset(cann, select=cat_in)))
+  groups <- combinations(subset(cann, select = cat_in))
   lvls <- lvls[lvls %in% groups]
   groups <- factor(groups, lvls)
   
   
   # Summarize across replicates (e.g. cells)
   if (collapse_replicates) {
-    mat <- summarize_groups(slot(object[[assay]], slot)[features[index], ], 
+    mat <- summarize_groups(slot(object[[assay]], slot)[features, ], 
                             groups
     )
-    smry <- unique_combinations(cann[, cat_in])
+    smry <- unique_combinations(subset(cann, select=cat_in))
     cann$cells <- 1
     temp <- data.frame(group = groups, cells = 1)
     for (i in cat_out) {
@@ -197,7 +220,7 @@ heatmap_expression <- function(
     cann <- smry
   } else {
     mat <- as.matrix(
-      slot(object[[assay]], slot)[features[index], order(groups)]
+      slot(object[[assay]], slot)[features, order(groups)]
     )
   }
   
@@ -209,11 +232,45 @@ heatmap_expression <- function(
   }
   
   # Annotation colors
-  if (is.null(annotation_colors)) {
-    ann_colors <- NA
-  } else if (class(colors) == "list") {
-    # TODO: create input for colors
-    ann_colors <- NA
+  ann_colors <- list()
+  # Column annotations
+  for (i in names(cann)) {
+    x <- unique(cann[[i]])
+    if (length(x) < 3) {
+      ann_colors[[i]] <- c("white", "black", "grey")[1:length(x)]
+      names(ann_colors[[i]]) <- levels(cann[[i]])
+    } else if (length(x) <= 9) {
+      ann_colors[[i]] <- RColorBrewer::brewer.pal(length(x), "Set1")
+      names(ann_colors[[i]]) <- levels(cann[[i]])
+    } else if (length(x) <= coldata_group_max) {
+      ann_colors[[i]] <- NULL
+    } else {
+      ann_colors[[i]] <- RColorBrewer::brewer.pal(4, "Greens")
+    }
+  }
+  # Row annotations
+  for (i in names(rann)) {
+    x <- unique(rann[[i]])
+    if (length(x) < 3) {
+      ann_colors[[i]] <- c("white", "black", "grey")[1:length(x)]
+      names(ann_colors[[i]]) <- levels(rann[[i]])
+    } else if (length(x) <= 9) {
+      ann_colors[[i]] <- RColorBrewer::brewer.pal(length(x), "Set2")
+      names(ann_colors[[i]]) <- levels(rann[[i]])
+    } else if (length(x) <= coldata_group_max) {
+      ann_colors[[i]] <- NULL
+    } else {
+      ann_colors[[i]] <- RColorBrewer::brewer.pal(4, "Greens")
+    }
+  }
+  # Add manually specified colors
+  if (is.list(annotation_colors)) {
+    for (i in names(annotation_colors)) {
+      if (i %in% names(ann_colors) & 
+          all(names(annotation_colors[[i]]) %in% names(ann_colors[[i]]))) {
+        ann_colors[[i]] <- annotation_colors[[i]]
+      }
+    }
   }
   
   # Breaks
@@ -238,6 +295,14 @@ heatmap_expression <- function(
     heatmap_colors <- rev(heatmap_colors)
   }
   color_scale <- colorRampPalette(heatmap_colors)(length(breaks))
+  
+  # Order ----------------------------------------------------------------------
+  
+  # Rows
+  if (order_rows) {
+    index <- order(rann[rowdata_label])
+    mat <- mat[features[index],]
+  }
   
   # Plot -----------------------------------------------------------------------
   plot <- pheatmap::pheatmap(
