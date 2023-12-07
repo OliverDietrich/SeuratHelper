@@ -244,6 +244,9 @@ heatmap_expression <- function(
     } else if (length(x) <= 9) {
       ann_colors[[i]] <- RColorBrewer::brewer.pal(length(x), "Set1")
       names(ann_colors[[i]]) <- levels(cann[[i]])
+    } else if (length(x) <= 12) {
+      ann_colors[[i]] <- RColorBrewer::brewer.pal(length(x), "Paired")
+      names(ann_colors[[i]]) <- levels(cann[[i]])
     } else if (length(x) <= coldata_group_max) {
       ann_colors[[i]] <- NULL
     } else {
@@ -258,6 +261,9 @@ heatmap_expression <- function(
       names(ann_colors[[i]]) <- levels(rann[[i]])
     } else if (length(x) <= 9) {
       ann_colors[[i]] <- RColorBrewer::brewer.pal(length(x), "Set2")
+      names(ann_colors[[i]]) <- levels(rann[[i]])
+    } else if (length(x) <= 12) {
+      ann_colors[[i]] <- RColorBrewer::brewer.pal(length(x), "Paired")
       names(ann_colors[[i]]) <- levels(rann[[i]])
     } else if (length(x) <= coldata_group_max) {
       ann_colors[[i]] <- NULL
