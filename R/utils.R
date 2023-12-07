@@ -104,6 +104,16 @@ which_rowMax <- function(x) {
   return(colnames(x)[v])
 }
 
+#' Select maximum occuring category in vector
+#' 
+#' @param v Vector
+#' 
+#' @export
+select_most_frequent_category <- function(v) {
+  index <- table(v)
+  sample(names(index[index == max(index)]), 1)
+}
+
 #' Summarize rows that have overlapping coordinates
 #' 
 #' @param df Data.frame

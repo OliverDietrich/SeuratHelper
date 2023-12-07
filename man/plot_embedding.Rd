@@ -10,8 +10,10 @@ plot_embedding(
   split.by = NULL,
   label = FALSE,
   embedding = tail(names(object@reductions), 1),
-  pt.size = NULL,
-  pt.stroke = NULL,
+  pt.aggr = TRUE,
+  pt.aggr.breaks = 300,
+  pt.size = 1,
+  pt.stroke = 0.1,
   dim.1 = 1,
   dim.2 = 2,
   brush = NULL,
@@ -29,8 +31,9 @@ plot_embedding(
   alpha = 1,
   shape = 20,
   color.transform = "",
+  pl.title = NULL,
   legend.position = "right",
-  legend.rows = NULL
+  legend.cols = NULL
 )
 }
 \arguments{
@@ -41,6 +44,8 @@ plot_embedding(
 \item{label}{Type of group labels (text or label)}
 
 \item{embedding}{Name of the embedding (e.g. 'umap')}
+
+\item{pt.size}{Point size}
 
 \item{brush}{Brushed points (xmin, xmax, ymin, ymax)}
 
@@ -64,8 +69,6 @@ plot_embedding(
 Options include log, log2, log1p, log10}
 
 \item{legend.position}{Position of the color legend.}
-
-\item{pointsize}{Point size}
 }
 \description{
 This function creates a plot of a cell embedding stored in a Seurat object.

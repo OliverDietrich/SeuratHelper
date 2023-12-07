@@ -10,8 +10,14 @@ heatmap_expression(
   coldata = NULL,
   rowdata = NULL,
   rowdata_label = "group",
+  order_rows = FALSE,
+  remove_duplicates = FALSE,
   collapse_replicates = TRUE,
-  colors = NULL,
+  coldata_group_max = 100,
+  cells = colnames(object),
+  heatmap_colors = "RdBu",
+  heatmap_color_dir = -1,
+  annotation_colors = NULL,
   scale = TRUE,
   assay = NULL,
   slot = "data",
@@ -19,6 +25,7 @@ heatmap_expression(
   title = "Differentially expressed genes",
   show_rownames = FALSE,
   show_colnames = FALSE,
+  gaps_row = NULL,
   ...
 )
 }
@@ -33,11 +40,40 @@ heatmap_expression(
 
 \item{rowdata_label}{Name of the row annotation}
 
+\item{order_rows}{Whether to order rows by group}
+
+\item{remove_duplicates}{Whether to remove duplicated rows}
+
 \item{collapse_replicates}{Whether to average over groups of cells}
+
+\item{coldata_group_max}{Maxiumum number of categories for each
+column annotation}
+
+\item{cells}{Cells to plot}
+
+\item{heatmap_colors}{Name of color scale to use (default: "RdBu")}
+
+\item{heatmap_color_dir}{Direction of heatmap color scale}
+
+\item{annotation_colors}{List of color assignments for annotations}
+
+\item{scale}{Whether to scale expression data}
+
+\item{assay}{Which assay to take expression data from}
+
+\item{slot}{Which slot of the assay to use ("data", "counts")}
 
 \item{limits}{Limits of the color scale}
 
 \item{title}{Plot title}
+
+\item{show_rownames}{Whether to show rownames}
+
+\item{show_colnames}{Whether to show colnames}
+
+\item{gaps_row}{Numeric vector specifying row gaps}
+
+\item{...}{Other parameters passed to pheatmap}
 }
 \description{
 Heatmap of gene expression
