@@ -344,13 +344,3 @@ plot_markers_embedding <- function(object, markers=NULL,
   
   return(plot)
 }
-
-#' Select maximum occuring category in vector
-#' 
-#' @param v Vector
-#' 
-#' @export
-select_most_frequent_category <- function(v) {
-  index <- table(v)
-  sample(names(index[index == max(index)]), 1)
-}
