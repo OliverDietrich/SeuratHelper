@@ -10,8 +10,10 @@ heatmap_expression(
   coldata = NULL,
   rowdata = NULL,
   rowdata_label = "group",
+  order_rows = FALSE,
+  remove_duplicates = FALSE,
   collapse_replicates = TRUE,
-  coldata_group_max = 250,
+  coldata_group_max = 100,
   cells = colnames(object),
   heatmap_colors = "RdBu",
   heatmap_color_dir = -1,
@@ -23,6 +25,7 @@ heatmap_expression(
   title = "Differentially expressed genes",
   show_rownames = FALSE,
   show_colnames = FALSE,
+  gaps_row = NULL,
   ...
 )
 }
@@ -36,6 +39,10 @@ heatmap_expression(
 \item{rowdata}{Annotation for rows}
 
 \item{rowdata_label}{Name of the row annotation}
+
+\item{order_rows}{Whether to order rows by group}
+
+\item{remove_duplicates}{Whether to remove duplicated rows}
 
 \item{collapse_replicates}{Whether to average over groups of cells}
 
@@ -63,6 +70,8 @@ column annotation}
 \item{show_rownames}{Whether to show rownames}
 
 \item{show_colnames}{Whether to show colnames}
+
+\item{gaps_row}{Numeric vector specifying row gaps}
 
 \item{...}{Other parameters passed to pheatmap}
 }
