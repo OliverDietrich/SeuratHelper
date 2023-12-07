@@ -129,6 +129,7 @@ heatmap_expression <- function(
     cann <- data.frame(row.names = colnames(object))
     for (i in coldata) {
       x <- object@meta.data[[i]]
+      x[is.na(x)] <- "NA"
       if (length(unique(x)) <= coldata_group_max) {
         cann[[i]] <- factor(x)
       } else {
