@@ -143,17 +143,18 @@ heatmap_expression <- function(
   
   # Detect features in assay
   index <- which(features %in% rownames(slot(object[[assay]], slot)))
-  if (length(index) < length(features)) {
+  if (length(index) == 0) {
+    stop("No matching features specified.") 
+  } else if (length(index) < length(features)) {
     leftout <- features[!features %in% features[index]]
     warning(paste("The following features were not found in the assay:",
                   paste(leftout, collapse = ", "), ". Will be removed..."))
-  } else if (length(index) == 0) {
-    stop("No matching features specified.") 
   }
   
   if (is.null(rowdata)) {
     # No rowdata specified
     rann <- NA
+    features <- features[index]
   } else if (class(rowdata) %in% c("character", "factor") &
              length(rowdata)==length(features)) {
     # One vector of labels
