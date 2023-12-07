@@ -224,6 +224,7 @@ heatmap_expression <- function(
       slot(object[[assay]], slot)[features, order(groups)]
     )
   }
+  rownames(mat) <- make.unique(rownames(mat), sep="-")
   
   # Color encoding -------------------------------------------------------------
   
