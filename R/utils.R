@@ -134,7 +134,7 @@ summarize_overlapping_rows <- function(df=NULL, x="x", y="y", FUN=mean,
   )
   
   # Remove NAs
-  df <- df[!is.na(df$col), ]
+  df <- na.omit(df)
   
   # Round coordinates
   for (i in c(x, y)) {
