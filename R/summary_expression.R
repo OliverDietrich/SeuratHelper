@@ -49,7 +49,7 @@ AddAUC <- function(
   return(object)
 }
 
-#' Heatmap of gene expression
+#' Create heatmap of gene expression
 #' 
 #' @param object Seurat object
 #' @param features Character of genes to plot
@@ -102,7 +102,6 @@ heatmap_expression <- function(
   
   stopifnot(
     !is.null(object),
-    class(features) == "character",
     cells %in% colnames(object),
     is.logical(order_rows),
     is.logical(remove_duplicates),
@@ -112,6 +111,15 @@ heatmap_expression <- function(
   
   if (is.null(assay)) {
     assay <- Seurat::DefaultAssay(object)
+  }
+  if (is.null(features)) {
+    ind <- rownames(slot(ds[[assay]], slot))
+    if (length(ind) <= 250) {
+      warning("No markers specified. Defaulting to whole assay.")
+      features <- ind
+    } else {
+      stop("No features specified. Aborting.")
+    }
   }
   
   # Subset by cells ------------------------------------------------------------
@@ -331,6 +339,52 @@ heatmap_expression <- function(
     silent = TRUE, 
     ...
     )
+  
+  return(plot)
+}
+
+
+#' Create violin plot of gene expression
+#'
+#' @param object Seurat object
+#' @param features Vector of features, defaults to whole assay
+#' @param max_features Maximum number of features to plot
+#' @param assay Name of assay to use
+#' @param slot Name of slot to use
+#' @export 
+violin_expression <- function(object=NULL, features=NULL, coldata = NULL,
+                              max.features=50,
+                              assay=NULL, slot="data",
+                              cells=colnames(object)) {
+  
+  stopifnot(
+    class(object) == "Seurat",
+    all(cells %in% colnames(object))
+  )
+  
+  if (is.null(assay)) {
+    assay <- Seurat::DefaultAssay(object)
+  }
+  if (is.null(features)) {
+    warning("No features specified. Defaulting to whole assay.")
+    features <-rownames(object@assays[[assay]])
+    if (length(features) > max.features) {
+      stop(paste("To many features in assay:", assay))
+    }
+  }
+  
+  # Subset by cells ------------------------------------------------------------
+  object <- subset(object, cells = cells)
+  
+  # Fetch data -----------------------------------------------------------------
+  mat <- slot(object[[assay]], slot)[features, ]
+  
+  
+  # Convert to tidy format -----------------------------------------------------
+  tidyr::gather(mat)
+  
+  # Plot -----------------------------------------------------------------------
+  plot <- ggplot2::ggplot()
   
   return(plot)
 }
