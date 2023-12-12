@@ -16,6 +16,7 @@ plot_markers_embedding(
   nrow = floor(sqrt(length(markers))),
   assay = NULL,
   slot = "data",
+  cells = NULL,
   scale = TRUE,
   markers.max = 100,
   pl.title = NULL,
@@ -32,6 +33,8 @@ plot_markers_embedding(
 \item{pt.size}{Point size}
 
 \item{nrow}{Number of rows}
+
+\item{cells}{Character vector of cells to plot}
 }
 \value{
 plot
