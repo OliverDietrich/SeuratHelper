@@ -240,6 +240,7 @@ plot_embedding <- function(
 #' @param embedding Embedding name (slot in reductions)
 #' @param nrow Number of rows
 #' @param pt.size Point size
+#' @param cells Character vector of cells to plot
 #' 
 #' @returns plot
 #' @export
@@ -254,6 +255,7 @@ plot_markers_embedding <- function(object, markers=NULL,
                                    nrow=floor(sqrt(length(markers))),
                                    assay = NULL,
                                    slot = "data",
+                                   cells = NULL,
                                    scale = TRUE,
                                    markers.max = 100,
                                    pl.title = NULL,
@@ -275,9 +277,15 @@ plot_markers_embedding <- function(object, markers=NULL,
       stop(paste("To many features in assay:", assay))
     }
   }
+  if (is.null(cells)) {
+    cells <- colnames(object)
+  } else if (!all(cells %in% colnames(object))) {
+    stop("Not all cells contained in object. Aborting.")
+  }
   
   # Fetch data -----------------------------------------------------------------
   df <- data.frame(
+    row.names = colnames(object),
     x = object@reductions[[embedding]]@cell.embeddings[, 1],
     y = object@reductions[[embedding]]@cell.embeddings[, 2]
   )
@@ -286,6 +294,9 @@ plot_markers_embedding <- function(object, markers=NULL,
       df[[i]] <- slot(object[[assay]], slot)[i, ]
     }
   }
+  
+  # Subset
+  df <- df[cells, ]
   
   # Re-shape -------------------------------------------------------------------
   df <- tidyr::gather(df, "gene", "count", -x, -y)
