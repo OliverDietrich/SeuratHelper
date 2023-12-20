@@ -25,26 +25,51 @@ AddAUC <- function(
   
   stopifnot(
     !is.null(object),
-    class(name) == "character" & length(name) == 1,
     class(features) == "list"
   )
   
+  # Select assay
   if (is.null(assay)) {
     assay <- Seurat::DefaultAssay(object)
+  } else if (!assay %in% names(object@assays)) {
+    stop("Assay provided does not exists.")
   }
   
-  if (name %in% names(object@assays) & force.recalc == FALSE) {
-    stop(paste("Assay", name, " already exists. 
-               To replace set force.recalc = TRUE"))
+  # Check features
+  if (is.null(features)) {
+    stop("No features supplied. Aborting.")
+  } else if (class(features) != "list") {
+    stop("Please specify a list of features.")
+  } else if (!all(unlist(features) %in% rownames(object[[assay]]))) {
+    stop(paste("Some features do not exist in assay", assay))
   }
- 
-  ranks <- AUCell::AUCell_buildRankings(
-    exprMat = slot(object@assays[[assay]], slot)
-      )
-  aucs <- AUCell::AUCell_calcAUC(features, ranks) # 400 - 7000
-  aucs <- as.data.frame(t(aucs@assays@data$AUC))
   
-  object[[name]] <- Seurat::CreateAssayObject(data = t(aucs))
+  # Check assay name
+  ind <- c(names(object), names(object@meta.data))
+  if (is.null(name)) {
+    stop("Please specify a name for the assay to store AUCs")
+  } else if (name %in% names(object@assays) & force.recalc == FALSE) {
+    warning(paste("Assay", name, " already exists. To replace set force.recalc = TRUE"))
+    run_aucell <- FALSE
+  } else if (name %in% names(object@assays) & force.recalc == TRUE) {
+    warning(paste("Assay", name, " exists but will be overwritten."))
+    run_aucell <- TRUE
+  } else if (name %in% ind) {
+    stop(paste(name, "already present in object. Please change name."))
+  } else {
+    run_aucell <- TRUE
+  }
+  
+  # Run AUCell
+  if (run_aucell) {
+    ranks <- AUCell::AUCell_buildRankings(
+      exprMat = slot(object@assays[[assay]], slot)
+    )
+    aucs <- AUCell::AUCell_calcAUC(features, ranks) # 400 - 7000
+    aucs <- as.data.frame(t(aucs@assays@data$AUC))
+    
+    object[[name]] <- Seurat::CreateAssayObject(data = t(aucs))
+  }
   
   return(object)
 }
