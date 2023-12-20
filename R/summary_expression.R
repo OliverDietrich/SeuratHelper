@@ -25,31 +25,56 @@ AddAUC <- function(
   
   stopifnot(
     !is.null(object),
-    class(name) == "character" & length(name) == 1,
     class(features) == "list"
   )
   
+  # Select assay
   if (is.null(assay)) {
     assay <- Seurat::DefaultAssay(object)
+  } else if (!assay %in% names(object@assays)) {
+    stop("Assay provided does not exists.")
   }
   
-  if (name %in% names(object@assays) & force.recalc == FALSE) {
-    stop(paste("Assay", name, " already exists. 
-               To replace set force.recalc = TRUE"))
+  # Check features
+  if (is.null(features)) {
+    stop("No features supplied. Aborting.")
+  } else if (class(features) != "list") {
+    stop("Please specify a list of features.")
+  } else if (!all(unlist(features) %in% rownames(object[[assay]]))) {
+    stop(paste("Some features do not exist in assay", assay))
   }
- 
-  ranks <- AUCell::AUCell_buildRankings(
-    exprMat = slot(object@assays[[assay]], slot)
-      )
-  aucs <- AUCell::AUCell_calcAUC(features, ranks) # 400 - 7000
-  aucs <- as.data.frame(t(aucs@assays@data$AUC))
   
-  object[[name]] <- Seurat::CreateAssayObject(data = t(aucs))
+  # Check assay name
+  ind <- c(names(object), names(object@meta.data))
+  if (is.null(name)) {
+    stop("Please specify a name for the assay to store AUCs")
+  } else if (name %in% names(object@assays) & force.recalc == FALSE) {
+    warning(paste("Assay", name, " already exists. To replace set force.recalc = TRUE"))
+    run_aucell <- FALSE
+  } else if (name %in% names(object@assays) & force.recalc == TRUE) {
+    warning(paste("Assay", name, " exists but will be overwritten."))
+    run_aucell <- TRUE
+  } else if (name %in% ind) {
+    stop(paste(name, "already present in object. Please change name."))
+  } else {
+    run_aucell <- TRUE
+  }
+  
+  # Run AUCell
+  if (run_aucell) {
+    ranks <- AUCell::AUCell_buildRankings(
+      exprMat = slot(object@assays[[assay]], slot)
+    )
+    aucs <- AUCell::AUCell_calcAUC(features, ranks) # 400 - 7000
+    aucs <- as.data.frame(t(aucs@assays@data$AUC))
+    
+    object[[name]] <- Seurat::CreateAssayObject(data = t(aucs))
+  }
   
   return(object)
 }
 
-#' Heatmap of gene expression
+#' Create heatmap of gene expression
 #' 
 #' @param object Seurat object
 #' @param features Character of genes to plot
@@ -102,7 +127,6 @@ heatmap_expression <- function(
   
   stopifnot(
     !is.null(object),
-    class(features) == "character",
     cells %in% colnames(object),
     is.logical(order_rows),
     is.logical(remove_duplicates),
@@ -112,6 +136,15 @@ heatmap_expression <- function(
   
   if (is.null(assay)) {
     assay <- Seurat::DefaultAssay(object)
+  }
+  if (is.null(features)) {
+    ind <- rownames(slot(ds[[assay]], slot))
+    if (length(ind) <= 250) {
+      warning("No markers specified. Defaulting to whole assay.")
+      features <- ind
+    } else {
+      stop("No features specified. Aborting.")
+    }
   }
   
   # Subset by cells ------------------------------------------------------------
@@ -331,6 +364,52 @@ heatmap_expression <- function(
     silent = TRUE, 
     ...
     )
+  
+  return(plot)
+}
+
+
+#' Create violin plot of gene expression
+#'
+#' @param object Seurat object
+#' @param features Vector of features, defaults to whole assay
+#' @param max_features Maximum number of features to plot
+#' @param assay Name of assay to use
+#' @param slot Name of slot to use
+#' @export 
+violin_expression <- function(object=NULL, features=NULL, coldata = NULL,
+                              max.features=50,
+                              assay=NULL, slot="data",
+                              cells=colnames(object)) {
+  
+  stopifnot(
+    class(object) == "Seurat",
+    all(cells %in% colnames(object))
+  )
+  
+  if (is.null(assay)) {
+    assay <- Seurat::DefaultAssay(object)
+  }
+  if (is.null(features)) {
+    warning("No features specified. Defaulting to whole assay.")
+    features <-rownames(object@assays[[assay]])
+    if (length(features) > max.features) {
+      stop(paste("To many features in assay:", assay))
+    }
+  }
+  
+  # Subset by cells ------------------------------------------------------------
+  object <- subset(object, cells = cells)
+  
+  # Fetch data -----------------------------------------------------------------
+  mat <- slot(object[[assay]], slot)[features, ]
+  
+  
+  # Convert to tidy format -----------------------------------------------------
+  tidyr::gather(mat)
+  
+  # Plot -----------------------------------------------------------------------
+  plot <- ggplot2::ggplot()
   
   return(plot)
 }

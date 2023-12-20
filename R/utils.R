@@ -159,3 +159,20 @@ summarize_overlapping_rows <- function(df=NULL, x="x", y="y", FUN=mean,
   # Return
   return(df)
 }
+
+#' Minmax scaling for numeric vector
+minmax <- function(x = NULL) {
+  
+  stopifnot(
+    !is.null(x)
+  )
+  
+  if (!is.numeric(x)) {
+    stop("Vector is not of class 'numeric'. Exiting.")
+  } 
+  
+  # Minmax
+  y <- (x - min(x)) / (max(x) - min(x))
+  
+  return(y)
+}
