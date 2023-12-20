@@ -24,8 +24,7 @@ AddAUC <- function(
     ) {
   
   stopifnot(
-    !is.null(object),
-    class(features) == "list"
+    !is.null(object)
   )
   
   # Select assay
@@ -41,7 +40,14 @@ AddAUC <- function(
   } else if (class(features) != "list") {
     stop("Please specify a list of features.")
   } else if (!all(unlist(features) %in% rownames(object[[assay]]))) {
-    stop(paste("Some features do not exist in assay", assay))
+    index <- rownames(object[[assay]])
+    frm <- list()
+    for (i in names(features)) {
+      frm[[i]] <- features[[i]][!features[[i]] %in% index]
+      features[[i]] <- features[[i]][features[[i]] %in% index]
+    }
+    frm <- stringr::str_c(unlist(frm), collapse = ", ")
+    warning(paste("Some features do not exist in assay", assay, "and will be removed:", frm))
   }
   
   # Check assay name
