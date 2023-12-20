@@ -4,10 +4,17 @@
 #' Cells can be colored by gene expression or metadata.
 #' 
 #' @param object Seurat object
-#' @param embedding Name of the embedding (e.g. 'umap')
 #' @param color Gene or metadata to color cells
+#' @param split.by Metadata to split plot by
 #' @param label Type of group labels (text or label)
+#' @param embedding Name of the embedding (e.g. 'umap')
+#' @param ann_colors Named vector of annotation colors
+#' @param pt.aggr Whether to summarize overlapping points
+#' @param pt.aggr.breaks Number of breaks to summarize overlapping points.
+#' Less breaks result in a coarser image, summarizing more points.
 #' @param pt.size Point size
+#' @param dim.1 Matrix column to use for x-axis
+#' @param dim.2 Matrix column to use for y-axis
 #' @param brush Brushed points (xmin, xmax, ymin, ymax)
 #' @param cells Character of cell barcodes to plot
 #' @param n.cells Number of cells to plot (randomly sampled)
@@ -28,6 +35,7 @@ plot_embedding <- function(
   split.by   = NULL, # TODO
   label      = FALSE,
   embedding  = tail(names(object@reductions), 1),
+  ann_colors = NULL,
   pt.aggr    = TRUE,
   pt.aggr.breaks = 300,
   pt.size    = 1,
@@ -139,11 +147,16 @@ plot_embedding <- function(
     ann_cols <- viridis::scale_color_viridis(option = "B", direction = -1)
     groups <- FALSE
   } else {
+    df$col <- factor(df$col)
     color_guide <- ggplot2::guide_legend(
       override.aes = list(size = 8), ncol = legend.cols
     )
-    ann_cols <- NULL
     groups <- TRUE
+    if (all(levels(df$col) %in% names(ann_colors))) {
+      ann_cols <- ggplot2::scale_color_manual(values=ann_colors[levels(df$col)])
+    } else {
+      ann_cols <- NULL
+    }
   }
   
   # Faceting -------------------------------------------------------------------
