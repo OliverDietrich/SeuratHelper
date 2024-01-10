@@ -10,6 +10,7 @@ plot_embedding(
   split.by = NULL,
   label = FALSE,
   embedding = tail(names(object@reductions), 1),
+  ann_colors = NULL,
   pt.aggr = TRUE,
   pt.aggr.breaks = 300,
   pt.size = 1,
@@ -41,11 +42,24 @@ plot_embedding(
 
 \item{color}{Gene or metadata to color cells}
 
+\item{split.by}{Metadata to split plot by}
+
 \item{label}{Type of group labels (text or label)}
 
 \item{embedding}{Name of the embedding (e.g. 'umap')}
 
+\item{ann_colors}{Named vector of annotation colors}
+
+\item{pt.aggr}{Whether to summarize overlapping points}
+
+\item{pt.aggr.breaks}{Number of breaks to summarize overlapping points.
+Less breaks result in a coarser image, summarizing more points.}
+
 \item{pt.size}{Point size}
+
+\item{dim.1}{Matrix column to use for x-axis}
+
+\item{dim.2}{Matrix column to use for y-axis}
 
 \item{brush}{Brushed points (xmin, xmax, ymin, ymax)}
 
