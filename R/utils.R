@@ -176,3 +176,23 @@ minmax <- function(x = NULL) {
   
   return(y)
 }
+
+#' Remove duplicates from vector
+remove_duplicates <- function(x = NULL) {
+  
+  stopifnot(!is.null(x))
+  
+  # Find
+  ind <- duplicated(x)
+  
+  # Warn
+  if (length(ind) > 0) {
+    z <- x[ind]
+    warning(paste("Removed:", stringr::str_c(z, collapse=", ")))
+  }
+  
+  # Remove
+  y <- x[!ind]
+  
+  return(y)
+}

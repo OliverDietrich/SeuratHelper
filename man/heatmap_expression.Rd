@@ -2,7 +2,7 @@
 % Please edit documentation in R/summary_expression.R
 \name{heatmap_expression}
 \alias{heatmap_expression}
-\title{Heatmap of gene expression}
+\title{Create heatmap of gene expression}
 \usage{
 heatmap_expression(
   object = NULL,
@@ -76,5 +76,5 @@ column annotation}
 \item{...}{Other parameters passed to pheatmap}
 }
 \description{
-Heatmap of gene expression
+Create heatmap of gene expression
 }
