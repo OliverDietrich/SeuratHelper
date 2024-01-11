@@ -404,12 +404,12 @@ violin_expression <- function(object=NULL, features=NULL, coldata = NULL,
     }
   }
   
-  # Subset by cells ------------------------------------------------------------
-  object <- subset(object, cells = cells)
-  
   # Fetch data -----------------------------------------------------------------
   mat <- slot(object[[assay]], slot)[features, ]
   
+  
+  # Subset by cells ------------------------------------------------------------
+  mat <- mat[, cells]
   
   # Convert to tidy format -----------------------------------------------------
   tidyr::gather(mat)
