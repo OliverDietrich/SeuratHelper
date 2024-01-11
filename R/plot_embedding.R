@@ -4,10 +4,17 @@
 #' Cells can be colored by gene expression or metadata.
 #' 
 #' @param object Seurat object
-#' @param embedding Name of the embedding (e.g. 'umap')
 #' @param color Gene or metadata to color cells
+#' @param split.by Metadata to split plot by
 #' @param label Type of group labels (text or label)
+#' @param embedding Name of the embedding (e.g. 'umap')
+#' @param ann_colors Named vector of annotation colors
+#' @param pt.aggr Whether to summarize overlapping points
+#' @param pt.aggr.breaks Number of breaks to summarize overlapping points.
+#' Less breaks result in a coarser image, summarizing more points.
 #' @param pt.size Point size
+#' @param dim.1 Matrix column to use for x-axis
+#' @param dim.2 Matrix column to use for y-axis
 #' @param brush Brushed points (xmin, xmax, ymin, ymax)
 #' @param cells Character of cell barcodes to plot
 #' @param n.cells Number of cells to plot (randomly sampled)
@@ -28,6 +35,7 @@ plot_embedding <- function(
   split.by   = NULL, # TODO
   label      = FALSE,
   embedding  = tail(names(object@reductions), 1),
+  ann_colors = NULL,
   pt.aggr    = TRUE,
   pt.aggr.breaks = 300,
   pt.size    = 1,
@@ -39,7 +47,7 @@ plot_embedding <- function(
   n.cells    = NULL,
   assay      = Seurat::DefaultAssay(object),
   slot       = "data",
-  theme.size = 15, # TODO
+  theme.size = 15,
   label.size = 6,
   split.by.rows = NULL,
   split.by.max = 20,
@@ -139,11 +147,16 @@ plot_embedding <- function(
     ann_cols <- viridis::scale_color_viridis(option = "B", direction = -1)
     groups <- FALSE
   } else {
+    df$col <- factor(df$col)
     color_guide <- ggplot2::guide_legend(
       override.aes = list(size = 8), ncol = legend.cols
     )
-    ann_cols <- NULL
     groups <- TRUE
+    if (all(levels(df$col) %in% names(ann_colors))) {
+      ann_cols <- ggplot2::scale_color_manual(values=ann_colors[levels(df$col)])
+    } else {
+      ann_cols <- NULL
+    }
   }
   
   # Faceting -------------------------------------------------------------------
@@ -238,28 +251,43 @@ plot_embedding <- function(
 #' @param object SeuratObject
 #' @param markers Character vector of marker genes
 #' @param embedding Embedding name (slot in reductions)
+#' @param pt.aggr Whether to summarize across points
+#' @param pt.aggr.breaks Number of breaks to summarize overlapping points.
+#' Less breaks result in a coarser image, summarizing more points.
 #' @param nrow Number of rows
 #' @param pt.size Point size
+#' @param pt.stroke Point stroke
+#' @param pt.shape Point shape
+#' @param assay Name of assay to use (defaults to active assay)
+#' @param slot Name of slot to use (default: 'data')
 #' @param cells Character vector of cells to plot
+#' @param scale Whether to scale expression (z-score)
+#' @param markers.max Maximum number of markers to plot
+#' Used to prevent plotting the whole assay
+#' @param pl.title Plot title
+#' @param col.title Name of color bar
+#' @param theme.size Size of the ggplot2 theme
 #' 
 #' @returns plot
 #' @export
 #'
-plot_markers_embedding <- function(object, markers=NULL,
+plot_markers_embedding <- function(object, 
+                                   markers=NULL,
                                    embedding=tail(names(object@reductions), 1),
                                    pt.aggr    = TRUE,
                                    pt.aggr.breaks = 300,
+                                   nrow=floor(sqrt(length(markers))),
                                    pt.size    = .5,
                                    pt.stroke  = .1,
                                    pt.shape=16,
-                                   nrow=floor(sqrt(length(markers))),
                                    assay = NULL,
                                    slot = "data",
                                    cells = NULL,
                                    scale = TRUE,
                                    markers.max = 100,
                                    pl.title = NULL,
-                                   col.title = NULL
+                                   col.title = NULL,
+                                   theme.size = 15
                                    ) {
   
   stopifnot(
@@ -339,7 +367,7 @@ plot_markers_embedding <- function(object, markers=NULL,
     ggplot2::geom_point(size = pt.size, stroke = pt.stroke, shape = pt.shape) +
     ggplot2::facet_wrap(~gene, nrow = nrow) +
     color_scale +
-    ggplot2::theme_void(20) +
+    ggplot2::theme_void(theme.size) +
     ggplot2::coord_fixed() +
     ggplot2::guides(
       color = ggplot2::guide_colorbar(barwidth = 1, barheight = 10, ticks = F)

@@ -49,7 +49,7 @@ add_qc_metrics <- function(object, assay = Seurat::DefaultAssay(object)) {
 #' 
 plot_qc_metrics <- function(object, x = "libsize", 
                             metrics = c("ngenes", "percent.mt", "percent.rp"),
-                            split_by = NULL, split_by_max = 5,
+                            split_by = NULL, split_by_max = 20,
                             color_by = NULL,
                             pt.bin = TRUE, nbins = 100,
                             pt.size = .5, theme.size = 15

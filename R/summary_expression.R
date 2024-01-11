@@ -24,8 +24,7 @@ AddAUC <- function(
     ) {
   
   stopifnot(
-    !is.null(object),
-    class(features) == "list"
+    !is.null(object)
   )
   
   # Select assay
@@ -41,7 +40,14 @@ AddAUC <- function(
   } else if (class(features) != "list") {
     stop("Please specify a list of features.")
   } else if (!all(unlist(features) %in% rownames(object[[assay]]))) {
-    stop(paste("Some features do not exist in assay", assay))
+    index <- rownames(object[[assay]])
+    frm <- list()
+    for (i in names(features)) {
+      frm[[i]] <- features[[i]][!features[[i]] %in% index]
+      features[[i]] <- features[[i]][features[[i]] %in% index]
+    }
+    frm <- stringr::str_c(unlist(frm), collapse = ", ")
+    warning(paste("Some features do not exist in assay", assay, "and will be removed:", frm))
   }
   
   # Check assay name
@@ -373,6 +379,51 @@ heatmap_expression <- function(
 #'
 #' @param object Seurat object
 #' @param features Vector of features, defaults to whole assay
+#' @param max_features Maximum number of features to plot
+#' @param assay Name of assay to use
+#' @param slot Name of slot to use
+#' @export 
+violin_expression <- function(object=NULL, features=NULL, coldata = NULL,
+                              max.features=50,
+                              assay=NULL, slot="data",
+                              cells=colnames(object)) {
+  
+  stopifnot(
+    class(object) == "Seurat",
+    all(cells %in% colnames(object))
+  )
+  
+  if (is.null(assay)) {
+    assay <- Seurat::DefaultAssay(object)
+  }
+  if (is.null(features)) {
+    warning("No features specified. Defaulting to whole assay.")
+    features <-rownames(object@assays[[assay]])
+    if (length(features) > max.features) {
+      stop(paste("To many features in assay:", assay))
+    }
+  }
+  
+  # Fetch data -----------------------------------------------------------------
+  mat <- slot(object[[assay]], slot)[features, ]
+  
+  
+  # Subset by cells ------------------------------------------------------------
+  mat <- mat[, cells]
+  
+  # Convert to tidy format -----------------------------------------------------
+  tidyr::gather(mat)
+  
+  # Plot -----------------------------------------------------------------------
+  plot <- ggplot2::ggplot()
+  
+  return(plot)
+}
+
+#' Create dot plot of gene expression
+#'
+#' @param object Seurat object
+#' @param features Vector of features
 #' @param max_features Maximum number of features to plot
 #' @param assay Name of assay to use
 #' @param slot Name of slot to use
